@@ -5,21 +5,13 @@
 // https://github.com/KK4TEE/kOSPrecisionLand
 
 
-///// Download Dependant libraies
-FOR file IN LIST(
-	"Flight",
-	"Util_Vessel",
-	"Util_Launch",
-	"Util_Engine",
-	"Util_Orbit"){ 
-		//Method for if to download or download again.
-		
-		IF (not EXISTS ("1:/" + file)) or (not runMode["runMode"] = 0.1)  { //Want to ignore existing files within the first runmode.
-			gf_DOWNLOAD("0:/Library/",file,file).
-			wait 0.001.	
-		}
-		RUNPATH(file).
-	}
+///// Dependant libraies
+
+	// "Flight",
+	// "Util_Vessel",
+	// "Util_Launch",
+	// "Util_Engine",
+	// "Util_Orbit"
 
 ///////////////////////////////////////////////////////////////////////////////////
 ///// List of functions that can be called externally
@@ -40,19 +32,22 @@ FOR file IN LIST(
 ////////////////////////////////////////////////////////////////	
 // Credit: Own recreated from ideas in mix of general	
 Function ff_preLaunch {
+	Parameter gimbalLimit is 90.
 	//TODO: Make gimble limits work.
 	Wait 1. //Alow Variables to be set and Stabilise pre launch
+	//Prelaunch
+	Wait 1. 
 	PRINT "Prelaunch.".
-	Lock Throttle to gl_TVALMax().
+	Lock Throttle to 1.
+	SET SHIP:CONTROL:PILOTMAINTHROTTLE TO 1.
+	LOCK STEERING TO r(up:pitch,up:yaw,facing:roll). //this is locked in current pointing poistion until the clamps are relased
 	Print "Current Stage:" + STAGE:NUMBER.
-	LOCK STEERING TO HEADING(90, 90). //this is locked 90,90 only until the clamps are relased
-
 	//Set the Gimbal limit for engines where possible
 	LIST ENGINES IN engList. //Get List of Engines in the vessel
 	FOR eng IN engList {  //Loops through Engines in the Vessel
 		//IF eng:STAGE = STAGE:NUMBER { //Check to see if the engine is in the current Stage, Note this is only used if you want a specific stage gimbal limit, otherwise it is applied to all engines
 			IF eng:HASGIMBAL{ //Check to see if it has a gimbal
-				SET eng:GIMBAL:LIMIT TO sv_gimbalLimit. //if it has a gimbal set the gimbal limit
+				SET eng:GIMBAL:LIMIT TO gimbalLimit. //if it has a gimbal set the gimbal limit
 				Print "Gimbal Set".
 			}
 		//}
@@ -62,10 +57,14 @@ Function ff_preLaunch {
 /////////////////////////////////////////////////////////////////////////////////////	
 // Credit: Own recreated from ideas in mix of general		
 Function ff_liftoff{
-	
+	Parameter thrustMargin is 0.97, MaxStartTime is 5.
 	STAGE. //Ignite main engines
+	Print "Starting engines".
 	Local EngineStartTime is TIME:SECONDS.
 	Local MaxEngineThrust is 0. 
+	Wait until Stage:Ready. 
+	Local englist is List().
+	List Engines.
 	LIST ENGINES IN engList. //Get List of Engines in the vessel
 	FOR eng IN engList {  //Loops through Engines in the Vessel
 		Print "eng:STAGE:" + eng:STAGE.
@@ -75,54 +74,45 @@ Function ff_liftoff{
 			Print "Stage Full Engine Thrust:" + MaxEngineThrust. 
 		}
 	}
-
+	Print "Checking thrust".
 	Local CurrEngineThrust is 0.
-	Local EngineStartOK is True.
-	until CurrEngineThrust = MaxEngineThrust or EngineStartOK{ // until upto thrust or the engines have attempted to get upto thrust for more than 5 seconds.
+	until CurrEngineThrust > (thrustMargin * MaxEngineThrust){ // until upto thrust or the engines have attempted to get upto thrust for more than 5 seconds.
+		Set CurrEngineThrust to 0.//reset each loop
 		FOR eng IN engList {  //Loops through Engines in the Vessel
+			//Print eng:name. //debugger
 			IF eng:STAGE >= STAGE:NUMBER { //Check to see if the engine is in the current Stage
+				//Print eng:THRUST. //debugger
 				SET CurrEngineThrust TO CurrEngineThrust + eng:THRUST. //add thrust to overall thrust
 			}
 		}
-		wait 0.01.
-		if EngineStartTime +5 > TIME:SECONDS {
-			Set EngineStartOK to False.
+		if TIME:SECONDS > (EngineStartTime + MaxStartTime){
+			Lock Throttle to 0.
+			Set SHIP:CONTROL:PILOTMAINTHROTTLE TO 0.
+			Print "Engine Start up Failed...Making Safe".
+			Shutdown. //ends the script
+			//Print "CurrEngineThrust: " + CurrEngineThrust. //debugger
 		}
+		Print "CurrEngineThrust: " + CurrEngineThrust. //debugger
+		Print "MaxEngineThrust: " + (thrustMargin * MaxEngineThrust). //debugger
+		wait 0.5.
 	}
-
-	If EngineStartOK <> True{
-		Lock Throttle to 0.
-		Print "Engine Start up Failed...Making Safe".
-		Shutdown. //ends the script
-	}
-	// Print CurrEngineThrust.
-	// Print MaxEngineThrust.
-	// Print EngineStartTime.
-	// Print TIME:SECONDS.
-
-	//TODO:Make and abort code incase an engine fails during the start up phase.
+	Print "Releasing Clamps".
 	Wait until Stage:Ready . // this ensures time between staging engines and clamps so they do not end up being caught up in the same physics tick
 	STAGE. // Relase Clamps
 	PRINT "Lift off".
-	//TODO: change the lock steering to heading as the core part may not be rotated correctly. need to find a away to ensure current rotation is kept.
-	LOCK STEERING TO HEADING(0, 90). // stops all rotation until clear of the tower. This should have been set previously but is done again for redundancy
-	
 }/// End Function
 
 /////////////////////////////////////////////////////////////////////////////////////	
 // Credit: Own recreated from ideas in mix of general
 Function ff_liftoffclimb{
-	//Print(SHIP:Q).
+	Parameter ClearanceHeight, intAzimith, anglePitchover.
 	local LchAlt is ALT:RADAR.
-	Wait UNTIL ALT:RADAR > sv_ClearanceHeight + LchAlt.
-	LOCK STEERING TO HEADING(sv_intAzimith, 90).
-	//Print(SHIP:Q).
+	Wait UNTIL ALT:RADAR > ClearanceHeight + LchAlt.
+	LOCK STEERING TO HEADING(intAzimith, 90).
 	Wait UNTIL SHIP:Q > 0.015. //Ensure past clearance height and airspeed 0.015 equates to approx 50m/s or 1.5kpa which is high enough to ensure aero stability for most craft small pitching	
-	PRINT "Starting Pitchover".
-	//Print (SHIP:Q).
-	LOCK STEERING TO HEADING(sv_intAzimith, sv_anglePitchover). //move to pitchover angle
-	SET t0 to TIME:SECONDS.
-	WAIT UNTIL (TIME:SECONDS - t0) > 5. //allows pitchover to stabilise
+	PRINT "Starting Pitchover" + MissionTime.
+	LOCK STEERING TO HEADING(intAzimith, anglePitchover). //move to pitchover angle
+	WAIT 10. //allows pitchover to stabilise
 }// End of Function
 	
 /////////////////////////////////////////////////////////////////////////////////////		

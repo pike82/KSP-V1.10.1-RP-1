@@ -43,7 +43,7 @@ Function ff_Vac_preLaunch {
 	//TODO: Make gimble limits work.
 	Wait 1. //Alow Variables to be set and Stabilise pre launch
 	PRINT "Prelaunch.".
-	Lock Throttle to gl_TVALMax().
+	Lock Throttle to 1.
 	
 	Print "Current Stage:" + STAGE:NUMBER.
 	LOCK STEERING TO SHIP:UP:VECTOR.

@@ -16,8 +16,9 @@ SET TERMINAL:CHARHEIGHT TO 10.
 Print "Library connection status:" + ADDONS:RT:HASKSCCONNECTION(SHIP).
 Local filename is CORE:Part:Tag.
 Local filePath is "0:/Missions/"+filename+".ks".
-if ADDONS:RT:HASKSCCONNECTION(SHIP){
+if HOMECONNECTION:ISCONNECTED{
     Print "Has connection".
     COPYPATH (filePath, "1:/"+ filename +".ks"). // moved the file onto local volume
 }
+
 RUNPATH ("1:/"+ filename +".ks").//runs file

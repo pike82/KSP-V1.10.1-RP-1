@@ -1,21 +1,10 @@
 
 //Credits:own
 
-///// Download Dependant libraies
-
-FOR file IN LIST(
-	"Util_Engine",
-	"Util_Vessel",
-	"Util_Orbit"){ 
-		//Method for if to download or download again.
-		
-		IF (not EXISTS ("1:/" + file)) or (not runMode["runMode"] = 0.1)  { //Want to ignore existing files within the first runmode.
-			gf_DOWNLOAD("0:/Library/",file,file).
-			wait 0.001.	
-		}
-		RUNPATH(file).
-	}
-
+/////Dependant libraies
+	"Util_Engine".
+	"Util_Vessel".
+	"Util_Orbit". 
 ///////////////////////////////////////////////////////////////////////////////////
 ///// List of functions that can be called externally
 ///////////////////////////////////////////////////////////////////////////////////
