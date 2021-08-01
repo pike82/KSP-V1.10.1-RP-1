@@ -23,7 +23,7 @@ FOR file IN LIST(
 if runMode = 0.1 { 
 	Print "Run mode is:" + runMode.
 	ff_preLaunch().
-	ff_liftoff().
+	ff_liftoff(0.8).
 	set runMode to 1.1.
 }	
 

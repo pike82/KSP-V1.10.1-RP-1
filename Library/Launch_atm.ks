@@ -94,7 +94,7 @@ Function ff_liftoff{
 		}
 		Print "CurrEngineThrust: " + CurrEngineThrust. //debugger
 		Print "MaxEngineThrust: " + (thrustMargin * MaxEngineThrust). //debugger
-		wait 0.5.
+		wait 0.1.
 	}
 	Print "Releasing Clamps".
 	Wait until Stage:Ready . // this ensures time between staging engines and clamps so they do not end up being caught up in the same physics tick
