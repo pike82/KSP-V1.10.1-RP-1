@@ -37,7 +37,15 @@ if runMode = 1.1 {
 
 if runMode = 2.1 { 
 	Print "Run mode is:" + runMode.
-	set runMode to 3.1.
+	wait 5.
+	Until SHIP:Q < 0.05{
+		Wait 0.2.
+	}
+	Stage. //start ullage
+	wait 1.0.
+	Stage.//start next engine
+	Wait 0.5.
+ 	set runMode to 3.1.
 }	
 
 if runMode = 3.1 { 

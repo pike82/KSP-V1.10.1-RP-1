@@ -63,77 +63,16 @@ FUNCTION ff_COMMS {
 ///////////////////////////////////////////////////////////////////////////////////	
 //Credit https://github.com/KSP-KOS/KOS/issues/1522
 
-function ff_R_chutes_seq {
-
-	set lp to ship:partstagged("DrogueChute").
-	set drogues to list().
-	Set i to 0.
-	until i>=lp:length{
-		drogues:add(lp[i]:getmodule("moduleparachute")). //drogue chutes
-		set i to i+1.
-	}
-	set lp to ship:partstagged("MainChute").
-	set mainchutes to list().
-	set i to 0.
-	until i>=lp:length{
-		mainchutes:add(lp[i]:getmodule("moduleparachute")). //main chutes
-		set i to i+1.
-	}
-	set lestimestamp to time:seconds.
-	// When ((time:seconds>lestimestamp+2)and(alt:radar<6000)) then{
-		// print "drogues armed".
-		// //Print drogues[0]:ALLFIELDNAMES.
-		// //Print drogues[0]:ALLEVENTS.
-		// //Print drogues[0]:ALLACTIONS.
-		// //when drogues[0]:getfield("safe to deploy?")="safe" then {
-			// set i to 0.
-			// until i>=drogues:length {
-				// if drogues[i]:hasevent("deploy chute") {
-					// drogues[i]:doevent("deploy chute").
-				// } 
-				// set i to i+1.
-			// }
-		// //}
-	// }
-	print "drogues deployed".
-	set lestimestamp to time:seconds.
-	When ((time:seconds>lestimestamp+0.5)and(alt:radar<3000)) then {
-		Print mainchutes.
-		Print mainchutes[0]:ALLFIELDNAMES.
-		Print mainchutes[0]:ALLEVENTS.
-		Print mainchutes[0]:ALLACTIONS.
-		print "main chutes armed".
-		//when mainchutes[0]:getfield("safe to deploy?")="safe" then {
-			set i to 0.
-			until i>=mainchutes:length {
-				if mainchutes[i]:hasevent("deploy chute") {
-					mainchutes[i]:doevent("deploy chute").
-				}
-				set i to i+1.
-			}
-		//}
-	}
-	print "main chutes deployed".
-	
-	WHEN (NOT CHUTESSAFE) THEN {
-    CHUTESSAFE ON.
-    RETURN (NOT CHUTES).
-	
-	wait 5.0.
-}
-	
-}// End Function
-
 function ff_R_chutes {
 parameter event is "arm parachute".
 
-	//["R_chutes"]("arm parachute").
-	//["R_chutes"]("disarm parachute").
-	//["R_chutes"]("deploy parachute").
-	//["R_chutes"]("cut chute").
 	for RealChute in ship:modulesNamed("RealChuteModule") {
 		RealChute:doevent(event).
 		Print event + " enabled.".
+		//"arm parachute".
+		//"disarm parachute".
+		//"deploy parachute".
+		//"cut chute".
 	}
 }// End Function
 
