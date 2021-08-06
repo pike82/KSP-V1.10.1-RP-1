@@ -37,7 +37,7 @@ if runMode = 1.1 {
 
 if runMode = 2.1 { 
 	Print "Run mode is:" + runMode.
-	set runMode to 3.1.
+ 	set runMode to 3.1.
 }	
 
 if runMode = 3.1 { 

@@ -14,7 +14,8 @@ PRINT ("Initialising libraries").
 
 FOR file IN LIST(
 	"Launch_atm"+ gv_ext,
-	"Util_Vessel"+ gv_ext)
+	"Util_Vessel"+ gv_ext,
+	"Util_Engine"+ gv_ext)
 	{ 
 		RUNONCEPATH("0:/Library/" + file).
 		wait 0.001.	
@@ -24,27 +25,22 @@ if runMode = 0.1 {
 	Print "Run mode is:" + runMode.
 	ff_preLaunch().
 	ff_liftoff(0.8).
+	ff_liftoffclimb(75).
 	set runMode to 1.1.
 }	
 
 if runMode = 1.1 { 
 	Print "Run mode is:" + runMode.
-	Wait until Stage:Ready. 
-	wait 1.1.
-	Stage.//drop solid
+	Wait until Stage:Ready.
+	ff_partslist("boostTank"). 
+	ff_GravityTurnAoA(90, "Hot", 1.5, 0.995).
 	set runMode to 2.1.
 }	
 
 if runMode = 2.1 { 
 	Print "Run mode is:" + runMode.
-	wait 5.
-	Until SHIP:Q < 0.05{
-		Wait 0.2.
-	}
-	Stage. //start ullage
-	wait 1.0.
-	Stage.//start next engine
-	Wait 0.5.
+	ff_partslist("Tank2").
+	ff_GravityTurnAoA(90, "Hot", 1.5, 0.95).
  	set runMode to 3.1.
 }	
 

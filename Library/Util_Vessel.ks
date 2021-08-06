@@ -4,16 +4,16 @@
 ///////////////////////////////////////////////////////////////////////////////////
 ///// List of functions that can be called externally
 ///////////////////////////////////////////////////////////////////////////////////
-	// local Util_Vessel is lex(
-		// "tol", ff_Tol@,
-		// "FAIRING",ff_FAIRING@,
-		// "COMMS",ff_COMMS@,
+		// ff_FAIRING,
+		// ff_panels,
+		// ff_Tol,
+		// ff_COMMS,
+		// ff_R_chutes,
+		// ff_partslist,
+
 		// "Gravity",ff_Gravity@,
 		// "R_chutes_seq", ff_R_chutes_seq@,
-		// "R_chutes", ff_R_chutes@,
 		// "collect_science", ff_collect_science@
-	// ).
-
 /////////////////////////////////////////////////////////////////////////////////////	
 //File Functions	
 /////////////////////////////////////////////////////////////////////////////////////	
@@ -30,7 +30,7 @@ FUNCTION ff_FAIRING {
 	}
 } // End of Function
 
-function solarpanels{
+function ff_panels{
 	panels on.
 }
 
@@ -75,6 +75,21 @@ parameter event is "arm parachute".
 		//"cut chute".
 	}
 }// End Function
+///////////////////////////////////////////////////////////////////////////////////	
+
+//Confirm Parts list
+function ff_partslist{
+	Parameter name is "".
+	Global RSS_partlist is list().
+	Global partlist is List().
+	LIST Parts IN partList. 
+	FOR Part IN partList {
+		IF Part:tag = name { 
+			RSS_partlist:add(Part).
+		}
+	}
+	Print "Parts: " + RSS_partlist.
+}
 
 ///////////////////////////////////////////////////////////////////////////////////
 

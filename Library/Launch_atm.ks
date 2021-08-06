@@ -30,7 +30,7 @@
 ////////////////////////////////////////////////////////////////
 //File Functions
 ////////////////////////////////////////////////////////////////	
-// Credit: Own recreated from ideas in mix of general	
+// Conducts Pre-launch checks pre-ignition
 Function ff_preLaunch {
 	Parameter gimbalLimit is 90.
 	//TODO: Make gimble limits work.
@@ -55,7 +55,7 @@ Function ff_preLaunch {
 } /// End Function	
 		
 /////////////////////////////////////////////////////////////////////////////////////	
-// Credit: Own recreated from ideas in mix of general		
+// Conducts ignition checks and releases		
 Function ff_liftoff{
 	Parameter thrustMargin is 0.97, MaxStartTime is 5.
 	STAGE. //Ignite main engines
@@ -103,9 +103,9 @@ Function ff_liftoff{
 }/// End Function
 
 /////////////////////////////////////////////////////////////////////////////////////	
-// Credit: Own recreated from ideas in mix of general
+// Conducts intial climb out and pitch over
 Function ff_liftoffclimb{
-	Parameter ClearanceHeight, intAzimith, anglePitchover.
+	Parameter anglePitchover is 88, intAzimith is 90, ClearanceHeight is 100. 
 	local LchAlt is ALT:RADAR.
 	Wait UNTIL ALT:RADAR > ClearanceHeight + LchAlt.
 	LOCK STEERING TO HEADING(intAzimith, 90).
@@ -116,98 +116,17 @@ Function ff_liftoffclimb{
 }// End of Function
 	
 /////////////////////////////////////////////////////////////////////////////////////		
-
-///This gravity turn tries to hold the AoA to a predefined value
-// Credit: Own recreated from ideas in mix of general
+///This gravity turn tries to hold the minimum AoA until the first stage cut-out
 Function ff_GravityTurnAoA{	
-	PARAMETER AoATarget is 0.0, ullage is "RCS", Flametime is 1.0, EndFunc is 0.05, Kp is 0.15, Ki is 0.35, Kd is 0.7, PID_Min is -0.1, PID_Max is 0.1. 
-	// General rule of thumb, set first stage dV to around 1700 - 1900 for Kerbin. Set the target AoA to (-(TWR^2))+1 ie. 1.51 = -1.25	
-	Set dPitch to 0.
-	Set MaxQ to 0.
-	Set gravPitch to sv_anglePitchover.	///Intital setup
-	LOCK STEERING TO HEADING(sv_intAzimith, gravPitch). //move to pitchover angle
-	
-	//SET PID TO PIDLOOP(KP, KI, KD, MINOUTPUT, MAXOUTPUT). 0.7 and 2.72s
-	Set PIDAngle to PIDLOOP(Kp, Ki, Kd,PID_Min,PID_Max).
-	Set PIDAngle:SETPOINT to AoATarget.
-	Set StartLogtime to TIME:SECONDS.
-	//Log "# Time, # grav pitch, # AoA, # dPitch, # PTerm , # ITerm , # DTerm" to AOA.csv.
-	
-	UNTIL (SHIP:Q < MaxQ*EndFunc) {
-		Set Angles to ff_Angles().
-		Set angofAttack to Angles["aoa"].
-
-		SET dPitch TO PIDAngle:UPDATE(TIME:SECONDS,angofAttack).
-		// you can also get the output value later from the PIDLoop object
-		// SET OUT TO PID:OUTPUT.
-		Set gravPitch to max(min(sv_anglePitchover,(gravPitch + dPitch)),0). //current pitch setting plus the change from the PID
-		if SHIP:Q > MaxQ {
-			Set MaxQ to SHIP:Q.
-		}
-		Clearscreen.
-		ff_Flameout(ullage).
-		ff_FAIRING().
-		ff_COMMS().
-		Print "AOA: "+ angofAttack.
-		Print "AOA tgt: "+ AoATarget.
-		Print "Delta Pitch: "+(dPitch).
-		Print "Setpoint Pitch: "+(gravPitch).
-		Print "Q: "+(SHIP:Q).
-		Print "Max Q: "+(MaxQ).
-		Print "Stage: "+(STAGE:NUMBER).
-		Print "TWR: "+(gl_TWR()).
-		Print "TWRTarget: "+(gl_TWRTarget()).
-		Print "Max G: "+(sv_maxGeeTarget).
-		Print "Throttle Setting: "+(gl_TVALMax()).
-		//Print PIDAngle:PTerm. //For determining the Correct PID Values
-		//Print PIDAngle:ITerm. //For determining the Correct PID Values
-		//Print PIDAngle:DTerm. //For determining the Correct PID Values
-		//PID Log for tuning
-		// Switch to 0.
-		// Log (TIME:SECONDS - StartLogtime) +","+ (gravPitch) +","+(gl_AoA) +","+ (dPitch) +","+ (PIDAngle:PTerm) +","+ (PIDAngle:ITerm) +","+ (PIDAngle:DTerm) to AOA.csv.
-		// Switch to 1.
-		//End PID Log loop
-		Wait 0.1.
-	}	/// End of Until
-} // End of Function
-
-/////////////////////////////////////////////////////////////////////////////////////	
-
-//This gravity turn is a work in progress however it it intended to follow a predefined path based on the ratio of atmospheric pressure  
-// Credit: Own recreated from ideas in mix of general	
-Function ff_GravityTurnPres{
-	PARAMETER PresMultiple is 0.25, ullage is "RCS".
-	
-	Set MaxQ to 0.
-	Set intPitch to sv_anglePitchover.	///Intital setup
-	LOCK STEERING TO HEADING(sv_intAzimith, intPitch). //move to pitchover angle
-	SET ATMPGround TO SHIP:SENSORS:PRES.
-	
-	LOCK atmp to ship:sensors:pres.
-	LOCK atmoDensity to (atmp / atmpGround) ^ PresMultiple.
-
-	LOCK currPitch to (intPitch * atmoDensity).
-	LOCK STEERING to HEADING(sv_intAzimith, currPitch).
-	UNTIL SHIP:Apoapsis > sv_targetAltitude {
-		Clearscreen.
-		Print "Pitch: " + currPitch.
-		Print "Pressure: " + atmp.
-		Print "Pressure Ratio: " + atmoDensity.
-		ff_Flameout(ullage).
-		ff_FAIRING().
-		ff_COMMS().
-		wait 0.001.
+	PARAMETER intAzimith is 90, ullage is "RCS", Flametime is 1.0, Res is 0.995. 
+	Print "Gravity Turn AOA".
+	lock pitch to 90 - VANG(SHIP:UP:VECTOR, SHIP:VELOCITY:SURFACE).
+	LOCK STEERING TO heading(intAzimith, pitch).
+	Local Endstage is false.
+	Until Endstage {
+		set Endstage to ff_Flameout(ullage, Flametime, Res).
+		Wait 0.05.
 	}
-	wait 0.001.
-	LOCK STEERING TO ship:facing:vector.
-	UNLOCK currPitch.
-	UNLOCK atmoDensity.
-	UNLOCK atmp.
-	LOCK Throttle to 0.
-	RCS on.
-
-	
-
 } // End of Function
 
 /////////////////////////////////////////////////////////////////////////////////////
