@@ -3026,7 +3026,7 @@ PART
 		lastMET = 0
 		currentFlightData = 9828.30371
 		initialFlightData = 10000
-		missionStartTime = 23210378.925542589
+		missionStartTime = 23210420.605541658
 		activeConfig = 
 		stagingEnabled = True
 		EVENTS
@@ -4817,7 +4817,7 @@ PART
 		lastMET = 0
 		currentFlightData = 9828.30371
 		initialFlightData = 10000
-		missionStartTime = 23210378.925542589
+		missionStartTime = 23210420.605541658
 		activeConfig = 
 		stagingEnabled = True
 		EVENTS
@@ -7127,6 +7127,8 @@ PART
 	link = RO-B9ProcWing-Early_4292626100
 	link = RO-B9ProcWing-Early_4292621890
 	link = RO-B9ProcWing-Early_4292621756
+	link = conformaldecals-flag_4292884118
+	link = conformaldecals-flag_4292882736
 	attN = top,proceduralAvionics_4292985656_0|4.9000001|0_0|1|0_0|4.9000001|0_0|1|0
 	attN = bottom,ROE-RD100_4292940484_0|-4.9000001|0_0|-1|0_0|-4.9000001|0_0|-1|0
 	EVENTS
@@ -7829,7 +7831,7 @@ PART
 		lastMET = 0
 		currentFlightData = 0
 		initialFlightData = 0
-		missionStartTime = 23210378.925542589
+		missionStartTime = 23210420.605541658
 		activeConfig = 
 		stagingEnabled = True
 		EVENTS
@@ -10470,6 +10472,310 @@ PART
 		name = ModuleB9PartInfo
 		isEnabled = False
 		stagingEnabled = True
+		EVENTS
+		{
+		}
+		ACTIONS
+		{
+		}
+		UPGRADESAPPLIED
+		{
+		}
+	}
+	MODULE
+	{
+		name = ModuleShowInfo
+		isEnabled = True
+		stagingEnabled = True
+		EVENTS
+		{
+		}
+		ACTIONS
+		{
+		}
+		UPGRADESAPPLIED
+		{
+		}
+	}
+}
+PART
+{
+	part = conformaldecals-flag_4292884118
+	partName = Part
+	persistentId = 1772985697
+	pos = -1.1293782,13.6752529,-2.86438322
+	attPos = 0,0,0
+	attPos0 = 0.72963953,3.00762749,2.38418579E-07
+	rot = -3.49422666E-13,0.707107782,-3.49423615E-13,-0.707105875
+	attRot = 0,0,0,1
+	attRot0 = -3.49422666E-13,0.707107782,-3.49423615E-13,-0.707105875
+	mir = 1,1,1
+	symMethod = Radial
+	autostrutMode = Off
+	rigidAttachment = False
+	istg = 2
+	resPri = 0
+	dstg = 4
+	sidx = -1
+	sqor = -1
+	sepI = 2
+	attm = 1
+	sameVesselCollision = False
+	modCost = 0
+	modMass = 0
+	modSize = 0,0,0
+	sym = conformaldecals-flag_4292882736
+	srfN = srfAttach,ROT-GenericTank-Separate_4292923730,SC-TANK-A-6-5-Collider,0|0|0.100000001,0|0|-1,0|0|0.100000001
+	EVENTS
+	{
+	}
+	ACTIONS
+	{
+		ToggleSameVesselInteraction
+		{
+			actionGroup = None
+		}
+		SetSameVesselInteraction
+		{
+			actionGroup = None
+		}
+		RemoveSameVesselInteraction
+		{
+			actionGroup = None
+		}
+	}
+	PARTDATA
+	{
+	}
+	MODULE
+	{
+		name = ModuleConformalFlag
+		isEnabled = True
+		flagUrl = Squad/Agencies/JebsJunkyard
+		useCustomFlag = False
+		scale = 1.00999999
+		depth = 0.579999983
+		opacity = 0.649999976
+		cutoff = 0
+		wear = 100
+		projectMultiple = False
+		stagingEnabled = True
+		EVENTS
+		{
+		}
+		ACTIONS
+		{
+		}
+		UPGRADESAPPLIED
+		{
+		}
+	}
+	MODULE
+	{
+		name = FARAeroPartModule
+		isEnabled = True
+		stagingEnabled = True
+		EVENTS
+		{
+		}
+		ACTIONS
+		{
+		}
+		UPGRADESAPPLIED
+		{
+		}
+	}
+	MODULE
+	{
+		name = FARPartModule
+		isEnabled = True
+		stagingEnabled = True
+		EVENTS
+		{
+		}
+		ACTIONS
+		{
+		}
+		UPGRADESAPPLIED
+		{
+		}
+	}
+	MODULE
+	{
+		name = KOSNameTag
+		isEnabled = True
+		nameTag = 
+		stagingEnabled = True
+		EVENTS
+		{
+		}
+		ACTIONS
+		{
+		}
+		UPGRADESAPPLIED
+		{
+		}
+	}
+	MODULE
+	{
+		name = ModuleAeroReentry
+		isEnabled = True
+		dead = False
+		internalDamage = 0
+		stagingEnabled = True
+		damageCube = 0, 0, 0, 0, 0, 0
+		EVENTS
+		{
+		}
+		ACTIONS
+		{
+		}
+		UPGRADESAPPLIED
+		{
+		}
+	}
+	MODULE
+	{
+		name = ModuleShowInfo
+		isEnabled = True
+		stagingEnabled = True
+		EVENTS
+		{
+		}
+		ACTIONS
+		{
+		}
+		UPGRADESAPPLIED
+		{
+		}
+	}
+}
+PART
+{
+	part = conformaldecals-flag_4292882736
+	partName = Part
+	persistentId = 169942159
+	pos = -2.58865738,13.6752529,-2.8643837
+	attPos = 0,0,0
+	attPos0 = -0.729639649,3.00762749,-2.38418579E-07
+	rot = -3.49423588E-13,-0.707105935,3.49422693E-13,-0.707107723
+	attRot = 0,0,0,1
+	attRot0 = -3.49423588E-13,-0.707105935,3.49422693E-13,-0.707107723
+	mir = 1,1,1
+	symMethod = Radial
+	autostrutMode = Off
+	rigidAttachment = False
+	istg = 2
+	resPri = 0
+	dstg = 4
+	sidx = -1
+	sqor = -1
+	sepI = 2
+	attm = 1
+	sameVesselCollision = False
+	modCost = 0
+	modMass = 0
+	modSize = 0,0,0
+	sym = conformaldecals-flag_4292884118
+	srfN = srfAttach,ROT-GenericTank-Separate_4292923730,SC-TANK-A-6-5-Collider,0|0|0.100000001,0|0|-1,0|0|0.100000001
+	EVENTS
+	{
+	}
+	ACTIONS
+	{
+		ToggleSameVesselInteraction
+		{
+			actionGroup = None
+		}
+		SetSameVesselInteraction
+		{
+			actionGroup = None
+		}
+		RemoveSameVesselInteraction
+		{
+			actionGroup = None
+		}
+	}
+	PARTDATA
+	{
+	}
+	MODULE
+	{
+		name = ModuleConformalFlag
+		isEnabled = True
+		flagUrl = Squad/Agencies/JebsJunkyard
+		useCustomFlag = False
+		scale = 1.00999999
+		depth = 0.579999983
+		opacity = 0.649999976
+		cutoff = 0
+		wear = 100
+		projectMultiple = False
+		stagingEnabled = True
+		EVENTS
+		{
+		}
+		ACTIONS
+		{
+		}
+		UPGRADESAPPLIED
+		{
+		}
+	}
+	MODULE
+	{
+		name = FARAeroPartModule
+		isEnabled = True
+		stagingEnabled = True
+		EVENTS
+		{
+		}
+		ACTIONS
+		{
+		}
+		UPGRADESAPPLIED
+		{
+		}
+	}
+	MODULE
+	{
+		name = FARPartModule
+		isEnabled = True
+		stagingEnabled = True
+		EVENTS
+		{
+		}
+		ACTIONS
+		{
+		}
+		UPGRADESAPPLIED
+		{
+		}
+	}
+	MODULE
+	{
+		name = KOSNameTag
+		isEnabled = True
+		nameTag = 
+		stagingEnabled = True
+		EVENTS
+		{
+		}
+		ACTIONS
+		{
+		}
+		UPGRADESAPPLIED
+		{
+		}
+	}
+	MODULE
+	{
+		name = ModuleAeroReentry
+		isEnabled = True
+		dead = False
+		internalDamage = 0
+		stagingEnabled = True
+		damageCube = 0, 0, 0, 0, 0, 0
 		EVENTS
 		{
 		}

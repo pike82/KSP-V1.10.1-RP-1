@@ -33,14 +33,14 @@ if runMode = 1.1 {
 	Print "Run mode is:" + runMode.
 	Wait until Stage:Ready.
 	ff_partslist("boostTank"). 
-	ff_GravityTurnAoA(90, "Hot", 1.5, 0.995).
+	ff_GravityTurnAoA(90, "Hot", 1.75, 0.995).
 	set runMode to 2.1.
 }	
 
 if runMode = 2.1 { 
 	Print "Run mode is:" + runMode.
 	ff_partslist("Tank2").
-	ff_GravityTurnAoA(90, "Hot", 1.5, 0.95).
+	ff_GravityTurnAoA(90, "Hot", 1.75, 0.95).
  	set runMode to 3.1.
 }	
 

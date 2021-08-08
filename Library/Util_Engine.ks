@@ -24,7 +24,7 @@ FUNCTION ff_FLAMEOUT {
 	local EnginesFlameout is 0.
 	local flameout is false.
 	
-	Print "Flameout".
+	//Print "Flameout".//DEBUG
 	
 	If Ullage = "RCS"{ /// ie. Use RCS or nothing to provide ullage
 	//Print "RCS Flameout".
@@ -170,9 +170,9 @@ local fuelmass is 0.
 				for f in fuels{
 					if f = res:NAME{
 						SET fuelMass TO fuelMass + (((res:DENSITY*res:AMOUNT)*1000)*residuals).
-						Print f + " : " + res:AMOUNT. //DEBUG
-						Print "Fuel Mass: " + fuelMass.
-						Print residuals.
+						//Print f + " : " + res:AMOUNT. //DEBUG
+						//Print "Fuel Mass: " + fuelMass. //DEBUG
+						//Print residuals. //DEBUG
 					}
 				}
 			}
