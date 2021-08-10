@@ -23,9 +23,11 @@ FUNCTION ff_FAIRING {
 
 	IF SHIP:Q < 0.005 {
 		FOR module IN SHIP:MODULESNAMED("ProceduralFairingDecoupler") {
-			module:DOEVENT("jettison").
-			PRINT "Jettisoning Fairings".
-			WAIT stageWait.
+			if module:HASEVENT("jettison"){
+				module:DOEVENT("jettison").
+				PRINT "Jettisoning Fairings".
+				WAIT stageWait.
+			}
 		}.
 	}
 } // End of Function

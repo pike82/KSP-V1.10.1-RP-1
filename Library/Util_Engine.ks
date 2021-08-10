@@ -38,9 +38,9 @@ FUNCTION ff_FLAMEOUT {
 				}
 			}
 		}
-		//Print STAGE:NUMBER.
-		//Print EnginesFlameout.
-		//Print engine_count.
+		//Print STAGE:NUMBER. //DEBUG
+		//Print EnginesFlameout. //DEBUG
+		//Print engine_count.  //DEBUG
 		If engine_count = EnginesFlameout {
 		//All engines required have flamed out
 			local RCSState is RCS. //Get the Current RCS State

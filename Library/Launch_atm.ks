@@ -16,16 +16,15 @@
 ///////////////////////////////////////////////////////////////////////////////////
 ///// List of functions that can be called externally
 ///////////////////////////////////////////////////////////////////////////////////
-// local launch_atm is lex(
-	// "preLaunch", ff_preLaunch@,
-	// "liftoff", ff_liftoff@,
-	// "liftoffclimb", ff_liftoffclimb@,
-	// "GravityTurnAoA", ff_GravityTurnAoA@,
+	// "preLaunch"
+	// "liftoff"
+	// "liftoffclimb"
+	// "GravityTurnAoA"
 	// "GravityTurnPres", ff_GravityTurnPres@,
-	// "Coast", ff_Coast@,
+	// "CoastH"
+	// "CoastT"
 	// "InsertionPIDSpeed", ff_InsertionPIDSpeed@,
 	// "InsertionPEG", ff_InsertionPEG@
-// ).
 
 ////////////////////////////////////////////////////////////////
 //File Functions
@@ -130,20 +129,50 @@ Function ff_GravityTurnAoA{
 } // End of Function
 
 /////////////////////////////////////////////////////////////////////////////////////
-// Credit: Own recreated from ideas in mix of general	
-Function ff_Coast{ // intended to keep a low AoA and burn then coast to Ap allowing another function (hill climb in this case) to calculate the insertion burn
-	Parameter ullage is "RCS".
+Function ff_CoastH{ // intended to keep a low AoA when coasting until a set altitude
+	Parameter targetAltitude, hold is false, intAzimith is 90.
 	Print "Coasting Phase".
-	LOCK STEERING TO ship:facing:vector. //maintain current alignment
-	RCS on.
-	UNTIL SHIP:Apoapsis > sv_targetAltitude {
-		ff_Flameout(ullage).
-		ff_FAIRING().
-		ff_COMMS().
-	}
 	LOCK Throttle to 0.
-
+	if hold{
+		LOCK STEERING TO ship:facing:vector. //maintain current alignment
+	}else{
+		lock pitch to 90 - VANG(SHIP:UP:VECTOR, SHIP:VELOCITY:SURFACE).
+	}
+	RCS on.
+	UNTIL SHIP:Apoapsis > targetAltitude {
+		ff_FAIRING().
+	}
 }// End of Function
+
+/////////////////////////////////////////////////////////////////////////////////////
+
+Function ff_CoastT{ // // intended to keep a low AoA when coasting until a set time from AP
+	Parameter targetETA is 30, hold is false, intAzimith is 90.
+	Print "Coasting Phase".
+	LOCK Throttle to 0.
+	if hold{
+		LOCK STEERING TO ship:facing:vector. //maintain current alignment
+	}else{
+		lock pitch to 90 - VANG(SHIP:UP:VECTOR, SHIP:VELOCITY:SURFACE).
+		LOCK STEERING TO heading(intAzimith, pitch).
+	}
+	RCS on.
+	UNTIL ETA:APOAPSIS < targetETA {
+		ff_FAIRING().
+	}
+}// End of Function
+
+/////////////////////////////////////////////////////////////////////////////////////
+
+Function ff_SpinStab{
+	Parameter intAzimith is 90, pitchdown is 0.
+	LOCK STEERING TO HEADING(intAzimith, pitchdown).
+	Print "Spin Stabilisation starting".
+	// unlock steering.
+	// SAS on.
+	// wait 0.25.
+	set ship:control:roll to 1.
+}
 
 /////////////////////////////////////////////////////////////////////////////////////
 // Credit: Own recreated from ideas in mix of general

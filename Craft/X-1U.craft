@@ -1,8 +1,8 @@
 ship = X-1U
 version = 1.10.1
-description = 
+description = 1: lower flaps¨2:raise flaps¨3:toggle spoiler
 type = SPH
-size = 11.3464174,5.87515974,12.7399349
+size = 11.3419447,5.81212044,12.739954
 steamPublishedFileId = 0
 persistentId = 2955995296
 rot = 0,0,0,0
@@ -16,8 +16,8 @@ PART
 {
 	part = RO-RFTank-Seperate_4293265222
 	partName = Part
-	persistentId = 625830694
-	pos = 0.486673981,3.03179526,-4.29574633
+	persistentId = 2366923454
+	pos = 0.486673981,3.03179526,-4.295753
 	attPos = 0,0,0
 	attPos0 = -9.83253358E-06,7.82390642,-3.74999595
 	rot = 0.707106829,0,0,0.707106829
@@ -75,7 +75,7 @@ PART
 		name = ProceduralPart
 		isEnabled = True
 		tempColliderCenter = (0, 0, 0)
-		tempColliderSize = (1.29374051, 7.50000477, 0.00100000005)
+		tempColliderSize = (1.29374051, 7.50000429, 0.00100000005)
 		forceLegacyTextures = False
 		textureSet = Original
 		capTextureIndex = 0
@@ -441,8 +441,8 @@ PART
 {
 	part = RO-B9ProcWing-Early_4292984004
 	partName = Part
-	persistentId = 2392014294
-	pos = 0.486673981,3.53943181,-8.04818916
+	persistentId = 584620060
+	pos = 0.486673981,3.53943181,-8.04820728
 	attPos = 0,0,0
 	attPos0 = 0,0,0
 	rot = 0.493720084,0.506202102,0.493720084,0.506202221
@@ -668,8 +668,8 @@ PART
 {
 	part = RO-B9ProcCS-Early_4292983870
 	partName = Part
-	persistentId = 3729845042
-	pos = 0.486673832,4.09973335,-8.35003757
+	persistentId = 113628834
+	pos = 0.486673832,4.09973717,-8.35005569
 	attPos = 0,0,0
 	attPos0 = 0,0,0
 	rot = 0.493719995,0.506202221,0.493720055,0.506202161
@@ -797,7 +797,7 @@ PART
 		{
 			ActivateSpoiler
 			{
-				actionGroup = Brakes
+				actionGroup = None
 			}
 			IncreaseDeflect
 			{
@@ -896,8 +896,8 @@ PART
 {
 	part = RO-B9ProcWing-Early_4292988204
 	partName = Part
-	persistentId = 125783159
-	pos = 0.486673921,4.7132616,-8.64600372
+	persistentId = 2189686545
+	pos = 0.486673921,4.71326542,-8.64602184
 	attPos = 0,0,0
 	attPos0 = 0,0,0
 	rot = 0.00936929323,0.715813518,0.698162794,0.00960614718
@@ -1120,11 +1120,11 @@ PART
 {
 	part = RO-B9ProcCS-Early_4293124094
 	partName = Part
-	persistentId = 1479002936
-	pos = -0.498351246,4.73696518,-9.50578785
+	persistentId = 2896230052
+	pos = -0.498353153,4.73696899,-9.50580788
 	attPos = 0,0,0
 	attPos0 = 0,0,0
-	rot = 0.689612746,-0.109330848,0.108401895,0.707623124
+	rot = 0.689612746,-0.109330907,0.108401984,0.707623124
 	attRot = 0,0,0,1
 	attRot0 = 0,0,0,1
 	mir = 1,1,1
@@ -1250,7 +1250,7 @@ PART
 		{
 			ActivateSpoiler
 			{
-				actionGroup = Brakes
+				actionGroup = None
 			}
 			IncreaseDeflect
 			{
@@ -1349,8 +1349,8 @@ PART
 {
 	part = RO-B9ProcWing-Early_4292980654
 	partName = Part
-	persistentId = 1164769011
-	pos = 0.486673921,4.7132616,-8.64600372
+	persistentId = 1966371303
+	pos = 0.486673921,4.71326542,-8.64602184
 	attPos = 0,0,0
 	attPos0 = 0,0,0
 	rot = -0.698163152,-0.009606109,-0.00936928857,-0.71581316
@@ -1573,11 +1573,11 @@ PART
 {
 	part = RO-B9ProcCS-Early_4292966352
 	partName = Part
-	persistentId = 2601833340
-	pos = 1.47169244,4.73696613,-9.50578785
+	persistentId = 3763169841
+	pos = 1.47169268,4.73696995,-9.50580788
 	attPos = 0,0,0
 	attPos0 = 0,0,0
-	rot = -0.689612567,-0.109331511,0.108401038,-0.707623184
+	rot = -0.689612567,-0.109331556,0.108401082,-0.707623184
 	attRot = 0,0,0,1
 	attRot0 = 0,0,0,1
 	mir = 1,1,1
@@ -1703,7 +1703,7 @@ PART
 		{
 			ActivateSpoiler
 			{
-				actionGroup = Brakes
+				actionGroup = None
 			}
 			IncreaseDeflect
 			{
@@ -1802,8 +1802,8 @@ PART
 {
 	part = conformaldecals-text_4292505104
 	partName = Part
-	persistentId = 1753276663
-	pos = 0.634562254,3.9248445,-7.47306919
+	persistentId = 2163125781
+	pos = 0.634562254,3.92484641,-7.4730854
 	attPos = 0,0,0
 	attPos0 = 0,0,0
 	rot = 0.00516864657,-0.70673871,0.0228177607,0.707087874
@@ -1962,8 +1962,8 @@ PART
 {
 	part = conformaldecals-text_4292504824
 	partName = Part
-	persistentId = 3580599740
-	pos = 0.338785768,3.9248445,-7.47307205
+	persistentId = 926005839
+	pos = 0.338785768,3.92484641,-7.47308826
 	attPos = 0,0,0
 	attPos0 = 0,0,0
 	rot = 0.00516918302,0.706738949,-0.022816956,0.707087755
@@ -2122,13 +2122,13 @@ PART
 {
 	part = RO-B9ProcWing-Early_4293186170
 	partName = Part
-	persistentId = 758251058
-	pos = -0.114064544,3.19276214,-2.60361028
+	persistentId = 1316237717
+	pos = -0.114064544,3.19276214,-2.60361218
 	attPos = 0,0,0
 	attPos0 = 0,0,0
-	rot = 0.0190540776,-0.715299606,-0.69848597,0.0100468583
-	attRot = 0,0,0,1
-	attRot0 = 0,0,0,1
+	rot = 0.0189313591,-0.70681262,-0.707072854,0.0102762226
+	attRot = 0.00612010714,-0.999768078,-0.000183999538,0.020652879
+	attRot0 = 0.00612010621,-0.999767959,-0.000183999509,0.0206528772
 	mir = 1,1,1
 	symMethod = Mirror
 	autostrutMode = Off
@@ -2350,11 +2350,11 @@ PART
 {
 	part = RO-B9ProcCS-Early_4293158976
 	partName = Part
-	persistentId = 1614821209
-	pos = -3.713341,2.97460246,-5.43443441
+	persistentId = 3171179711
+	pos = -3.71611714,3.04185748,-5.43530607
 	attPos = 0,0,0
 	attPos0 = 0,0,0
-	rot = 0.69649756,-0.0531309247,0.0896862447,0.709947109
+	rot = 0.705064654,-0.0537520796,0.0887963623,0.701505542
 	attRot = 0,0,0,1
 	attRot0 = 0,0,0,1
 	mir = 1,1,1
@@ -2480,7 +2480,7 @@ PART
 		{
 			ActivateSpoiler
 			{
-				actionGroup = Brakes
+				actionGroup = None
 			}
 			IncreaseDeflect
 			{
@@ -2579,11 +2579,11 @@ PART
 {
 	part = RO-B9ProcCS-Early_4292455320
 	partName = Part
-	persistentId = 2534675769
-	pos = -1.56084239,3.08016324,-4.9814806
+	persistentId = 2985010880
+	pos = -1.56319249,3.13712287,-4.98207521
 	attPos = 0,0,0
 	attPos0 = 0,0,0
-	rot = -0.696002901,0.0655192807,-0.098573707,-0.708216608
+	rot = -0.704555273,0.0662476718,-0.0975336879,-0.699785948
 	attRot = 0,0,0,1
 	attRot0 = 0,0,0,1
 	mir = 1,1,1
@@ -2709,7 +2709,7 @@ PART
 		{
 			ActivateSpoiler
 			{
-				actionGroup = Brakes
+				actionGroup = None
 			}
 			IncreaseDeflect
 			{
@@ -2808,11 +2808,11 @@ PART
 {
 	part = conformaldecals-flag_4293048874
 	partName = Part
-	persistentId = 1112725120
-	pos = -1.40074551,3.21648932,-3.58394575
+	persistentId = 3658681705
+	pos = -1.40173542,3.23974037,-3.58181429
 	attPos = 0,0,0
 	attPos0 = 0,0,0
-	rot = 0.698486269,0.0100468006,0.0190541521,0.715299308
+	rot = 0.707073152,0.0102761593,0.0189314187,0.706812322
 	attRot = 0,0,0,1
 	attRot0 = 0,0,0,1
 	mir = 1,1,1
@@ -2960,11 +2960,11 @@ PART
 {
 	part = RO-B9ProcCS-Early_4292510814
 	partName = Part
-	persistentId = 4024168665
-	pos = -2.55409765,3.06339765,-4.75592184
+	persistentId = 719867631
+	pos = -2.55621624,3.11461425,-4.75599861
 	attPos = 0,0,0
 	attPos0 = 0,0,0
-	rot = 0.696253717,-0.0633865371,0.105838723,0.707114875
+	rot = 0.704796135,-0.0642032474,0.104823619,0.698679149
 	attRot = 0,0,0,1
 	attRot0 = 0,0,0,1
 	mir = 1,1,1
@@ -3090,7 +3090,7 @@ PART
 		{
 			ActivateSpoiler
 			{
-				actionGroup = Brakes
+				actionGroup = Custom03
 			}
 			IncreaseDeflect
 			{
@@ -3189,11 +3189,11 @@ PART
 {
 	part = conformaldecals-generic_4292508432
 	partName = Part
-	persistentId = 3645119494
-	pos = -3.50077987,3.06441569,-4.78143549
+	persistentId = 356295692
+	pos = -3.50292587,3.11595607,-4.78053904
 	attPos = 0,0,0
 	attPos0 = 0,0,0
-	rot = 0.692371309,-0.092435807,0.13082318,0.703536093
+	rot = 0.70088762,-0.0935541987,0.129457206,0.695158303
 	attRot = 0,0,0,1
 	attRot0 = 0,0,0,1
 	mir = 1,1,1
@@ -3371,12 +3371,12 @@ PART
 {
 	part = RO-B9ProcWing-Early_4291089050
 	partName = Part
-	persistentId = 899700768
-	pos = 1.08741248,3.19276214,-2.60361028
+	persistentId = 827763904
+	pos = 1.08741248,3.19276214,-2.60361266
 	attPos = 0,0,0
 	attPos0 = 0,0,0
-	rot = -0.69848603,0.0100468192,0.0190540347,-0.715299547
-	attRot = 0,0,0,1
+	rot = -0.707072973,0.0102761909,0.0189313218,-0.706812501
+	attRot = 0.00612010714,-0.999768078,-0.000183999538,0.020652879
 	attRot0 = 0,0,0,1
 	mir = 1,1,1
 	symMethod = Mirror
@@ -3599,11 +3599,11 @@ PART
 {
 	part = RO-B9ProcCS-Early_4291088922
 	partName = Part
-	persistentId = 907745263
-	pos = 4.686625,2.97461009,-5.43443823
+	persistentId = 2290404106
+	pos = 4.68946505,3.04185748,-5.43530798
 	attPos = 0,0,0
 	attPos0 = 0,0,0
-	rot = 0.696497381,0.0531310886,-0.0896865577,0.709947169
+	rot = 0.705064774,0.0537520796,-0.0887963325,0.701505423
 	attRot = 0,0,0,1
 	attRot0 = 0,0,0,1
 	mir = 1,1,1
@@ -3729,7 +3729,7 @@ PART
 		{
 			ActivateSpoiler
 			{
-				actionGroup = Brakes
+				actionGroup = None
 			}
 			IncreaseDeflect
 			{
@@ -3828,11 +3828,11 @@ PART
 {
 	part = RO-B9ProcCS-Early_4291088842
 	partName = Part
-	persistentId = 1582049577
-	pos = 2.53417468,3.08016276,-4.9814868
+	persistentId = 4108068684
+	pos = 2.53654051,3.13712287,-4.98207664
 	attPos = 0,0,0
 	attPos0 = 0,0,0
-	rot = 0.69600296,0.0655193105,-0.0985739902,0.708216548
+	rot = 0.704555333,0.0662476867,-0.0975336879,0.699785888
 	attRot = 0,0,0,1
 	attRot0 = 0,0,0,1
 	mir = 1,1,1
@@ -3958,7 +3958,7 @@ PART
 		{
 			ActivateSpoiler
 			{
-				actionGroup = Brakes
+				actionGroup = None
 			}
 			IncreaseDeflect
 			{
@@ -4057,11 +4057,11 @@ PART
 {
 	part = conformaldecals-flag_4293049560
 	partName = Part
-	persistentId = 1362591858
-	pos = 2.37407947,3.21648932,-3.58394575
+	persistentId = 1306010738
+	pos = 2.37508345,3.23974037,-3.58181548
 	attPos = 0,0,0
 	attPos0 = 0,0,0
-	rot = -0.698486149,0.0100468174,0.0190542303,-0.715299428
+	rot = 0.707073212,-0.0102761555,-0.0189314149,0.706812263
 	attRot = 0,0,0,1
 	attRot0 = 0,0,0,1
 	mir = 1,1,1
@@ -4209,11 +4209,11 @@ PART
 {
 	part = RO-B9ProcCS-Early_4292510946
 	partName = Part
-	persistentId = 3879155143
-	pos = 3.5274303,3.06339765,-4.75592184
+	persistentId = 3945701765
+	pos = 3.52956438,3.11461425,-4.75600004
 	attPos = 0,0,0
 	attPos0 = 0,0,0
-	rot = 0.696253717,0.0633863136,-0.105838515,0.707114995
+	rot = 0.704796195,0.0642032251,-0.104823567,0.69867909
 	attRot = 0,0,0,1
 	attRot0 = 0,0,0,1
 	mir = 1,1,1
@@ -4339,7 +4339,7 @@ PART
 		{
 			ActivateSpoiler
 			{
-				actionGroup = Brakes
+				actionGroup = Custom03
 			}
 			IncreaseDeflect
 			{
@@ -4438,11 +4438,11 @@ PART
 {
 	part = conformaldecals-generic_4292509268
 	partName = Part
-	persistentId = 1626217764
-	pos = 4.47409964,3.06441569,-4.78143454
+	persistentId = 2376875934
+	pos = 4.47627401,3.11595607,-4.78053999
 	attPos = 0,0,0
 	attPos0 = 0,0,0
-	rot = 0.692371309,0.0924358293,-0.130823135,0.703536212
+	rot = 0.70088768,0.0935541913,-0.129457176,0.695158243
 	attRot = 0,0,0,1
 	attRot0 = 0,0,0,1
 	mir = 1,1,1
@@ -4620,9 +4620,9 @@ PART
 {
 	part = SmallGearBay_4293171574
 	partName = Part
-	persistentId = 1936447077
-	pos = 0.486673981,2.39155674,-1.06535292
-	attPos = 0,0,0
+	persistentId = 3706687373
+	pos = 0.486673981,2.50065446,-1.06535125
+	attPos = 0,3.23040009,0.531140149
 	attPos0 = 0,0,0
 	rot = 0.00605425239,2.52201038E-13,4.16566469E-11,0.999981761
 	attRot = 0,0,0,1
@@ -4920,7 +4920,7 @@ PART
 		isEnabled = True
 		frictionControl = 1
 		showControls = True
-		springRating = 0.5
+		springRating = 0.800000012
 		dampRatio = 0.649999976
 		wheelGroup = 0
 		scale = 1
@@ -5099,8 +5099,8 @@ PART
 {
 	part = SmallGearBay_4293171032
 	partName = Part
-	persistentId = 24925326
-	pos = -0.0702106059,2.62735534,-6.06920576
+	persistentId = 169823268
+	pos = -0.0702106059,2.62735343,-6.06921625
 	attPos = 0,0,0
 	attPos0 = 0,0,0
 	rot = 0.00481757522,-0.00423636287,-0.0640841052,0.99792397
@@ -5400,7 +5400,7 @@ PART
 		isEnabled = True
 		frictionControl = 1
 		showControls = True
-		springRating = 0.5
+		springRating = 0.800000012
 		dampRatio = 0.649999976
 		wheelGroup = 0
 		scale = 1
@@ -5579,8 +5579,8 @@ PART
 {
 	part = SmallGearBay_4291080552
 	partName = Part
-	persistentId = 417440580
-	pos = 1.04355872,2.62735772,-6.06920576
+	persistentId = 3108499646
+	pos = 1.04355872,2.62735581,-6.06921625
 	attPos = 0,0,0
 	attPos0 = 0,0,0
 	rot = 0.00481757522,0.00423636287,0.0640841052,0.99792397
@@ -5868,7 +5868,7 @@ PART
 		isEnabled = True
 		frictionControl = 1
 		showControls = True
-		springRating = 0.5
+		springRating = 0.800000012
 		dampRatio = 0.649999976
 		wheelGroup = 0
 		scale = 1
@@ -6047,8 +6047,8 @@ PART
 {
 	part = proceduralStructural_4290918596
 	partName = Part
-	persistentId = 168255316
-	pos = 0.686670899,3.03179526,-7.29606915
+	persistentId = 3473202269
+	pos = 0.686670899,3.03179526,-7.29608536
 	attPos = 0,0,0
 	attPos0 = 0,0,0
 	rot = 0.427688986,-0.557375133,-0.564572871,0.433211952
@@ -6100,7 +6100,7 @@ PART
 		name = ProceduralPart
 		isEnabled = True
 		tempColliderCenter = (0, 0, 0)
-		tempColliderSize = (0.00100000005, 1.92629337, 0.00100000005)
+		tempColliderSize = (0.00100000005, 1.9262929, 0.00100000005)
 		forceLegacyTextures = False
 		textureSet = Original
 		capTextureIndex = 0
@@ -6389,8 +6389,8 @@ PART
 {
 	part = proceduralStructural_4290918506
 	partName = Part
-	persistentId = 624226887
-	pos = 0.670939088,3.03601384,-8.59600925
+	persistentId = 2923170838
+	pos = 0.670939088,3.03601384,-8.59602737
 	attPos = 0,0,0
 	attPos0 = 0,0,0
 	rot = -0.703988254,0.0618582219,-0.0537099913,0.705471098
@@ -6442,7 +6442,7 @@ PART
 		name = ProceduralPart
 		isEnabled = True
 		tempColliderCenter = (0, 0, 0)
-		tempColliderSize = (1.04064751, 0.00100000005, 1.45776033)
+		tempColliderSize = (1.04064739, 0.00100000005, 1.45776033)
 		forceLegacyTextures = False
 		textureSet = Original
 		capTextureIndex = 0
@@ -6731,8 +6731,8 @@ PART
 {
 	part = ROE-XLR11_4291122722
 	partName = Part
-	persistentId = 1691796323
-	pos = 0.670939088,3.03601384,-8.79602909
+	persistentId = 3743411502
+	pos = 0.670939088,3.03601384,-8.79604912
 	attPos = 0,0,0
 	attPos0 = 0,0,0
 	rot = 0.187159404,0.682998717,0.682998598,0.178877309
@@ -7013,9 +7013,9 @@ PART
 		isEnabled = True
 		operatingTime = 0
 		lastMET = 776.78965292870998
-		currentFlightData = 0
-		initialFlightData = 1634.61511
-		missionStartTime = 45233963.649635255
+		currentFlightData = 4056.7251
+		initialFlightData = 6056.7251
+		missionStartTime = 58901656.730832115
 		activeConfig = 
 		stagingEnabled = True
 		EVENTS
@@ -7207,8 +7207,8 @@ PART
 {
 	part = proceduralStructural_4290917248
 	partName = Part
-	persistentId = 2074265996
-	pos = 0.286677033,3.03179526,-7.29606915
+	persistentId = 532496074
+	pos = 0.286677033,3.03179526,-7.29608536
 	attPos = 0,0,0
 	attPos0 = 0,0,0
 	rot = 0.427689046,0.557375193,0.56457293,0.433211893
@@ -7260,7 +7260,7 @@ PART
 		name = ProceduralPart
 		isEnabled = True
 		tempColliderCenter = (0, 0, 0)
-		tempColliderSize = (0.952629745, 1.89232004, 1.69870639)
+		tempColliderSize = (0.952629268, 1.89231861, 1.69870639)
 		forceLegacyTextures = False
 		textureSet = Original
 		capTextureIndex = 0
@@ -7549,8 +7549,8 @@ PART
 {
 	part = proceduralStructural_4290917152
 	partName = Part
-	persistentId = 1518028461
-	pos = 0.302408844,3.03601384,-8.59600925
+	persistentId = 1645395458
+	pos = 0.302408844,3.03601384,-8.59602737
 	attPos = 0,0,0
 	attPos0 = 0,0,0
 	rot = -0.703988373,-0.0618583933,0.0537101999,0.705470979
@@ -7602,7 +7602,7 @@ PART
 		name = ProceduralPart
 		isEnabled = True
 		tempColliderCenter = (0, 0, 0)
-		tempColliderSize = (1.46989, 0.00100000005, 1.04322684)
+		tempColliderSize = (1.46989167, 0.00100000005, 1.04322743)
 		forceLegacyTextures = False
 		textureSet = Original
 		capTextureIndex = 0
@@ -7891,8 +7891,8 @@ PART
 {
 	part = ROE-XLR11_4290910342
 	partName = Part
-	persistentId = 40880748
-	pos = 0.302408844,3.03601384,-8.79602909
+	persistentId = 3049422109
+	pos = 0.302408844,3.03601384,-8.79604912
 	attPos = 0,0,0
 	attPos0 = 0,0,0
 	rot = -0.18715921,0.682998717,0.682998717,-0.178877205
@@ -8165,9 +8165,9 @@ PART
 		isEnabled = True
 		operatingTime = 0
 		lastMET = 776.78965292870998
-		currentFlightData = 0
-		initialFlightData = 1634.61511
-		missionStartTime = 45233963.649635255
+		currentFlightData = 4056.7251
+		initialFlightData = 6056.7251
+		missionStartTime = 58901656.730832115
 		activeConfig = 
 		stagingEnabled = True
 		EVENTS
@@ -8359,8 +8359,8 @@ PART
 {
 	part = conformaldecals-generic_4292543250
 	partName = Part
-	persistentId = 2029066615
-	pos = 0.497980744,3.72343445,-0.95252353
+	persistentId = 3704804227
+	pos = 0.497980744,3.72343707,-0.952519715
 	attPos = 0,0,0
 	attPos0 = 0,0,0
 	rot = -0.496760935,0.496760935,-0.503218293,-0.503218293
@@ -8540,7 +8540,7 @@ PART
 {
 	part = RO-X1Cockpit_4291311038
 	partName = Part
-	persistentId = 3601949777
+	persistentId = 2812664092
 	pos = 0.486673981,3.03179479,-0.545706809
 	attPos = 0,0,0
 	attPos0 = 0.486673981,3.03179479,-0.545706809
@@ -10074,8 +10074,8 @@ PART
 {
 	part = conformaldecals-munar_4292504680
 	partName = Part
-	persistentId = 3463460386
-	pos = 1.04420567,3.07371259,-8.82342052
+	persistentId = 1907261315
+	pos = 1.04420567,3.07371259,-8.82344055
 	attPos = 0,0,0
 	attPos0 = 0.364767164,0.22328572,0.0977393761
 	rot = -0.374305218,-0.415519595,0.613466263,0.557582498
@@ -10256,8 +10256,8 @@ PART
 {
 	part = conformaldecals-munar_4290183818
 	partName = Part
-	persistentId = 2112422439
-	pos = -0.0708595216,3.07371259,-8.82342052
+	persistentId = 1733695381
+	pos = -0.0708599985,3.07371259,-8.82344055
 	attPos = 0,0,0
 	attPos0 = -0.364767075,0.22328569,0.0977396965
 	rot = -0.374305248,0.415519536,-0.613466203,0.557582617
@@ -10438,8 +10438,8 @@ PART
 {
 	part = ROT-RadialTank-Separate_4289995776
 	partName = Part
-	persistentId = 350554912
-	pos = 0.486673981,3.06437325,0.997139633
+	persistentId = 1193477854
+	pos = 0.486673981,3.06437325,0.997142971
 	attPos = 0,-0.136651516,0.375933647
 	attPos0 = 0,1.67949152,-0.408512354
 	rot = -0.579143763,0.405700207,0.579143822,-0.405700058
@@ -10742,7 +10742,7 @@ PART
 {
 	part = RO.FASA.ExplorerRCS_4290805784
 	partName = Part
-	persistentId = 2700295610
+	persistentId = 4149841185
 	pos = 0.328356177,3.62264585,-0.427439332
 	attPos = 0,0,0
 	attPos0 = -0.158317804,0.118267417,-0.590850949
@@ -11060,7 +11060,7 @@ PART
 {
 	part = RO.FASA.ExplorerRCS_4289496636
 	partName = Part
-	persistentId = 1635256769
+	persistentId = 2341973917
 	pos = 0.644991755,3.62264585,-0.427439392
 	attPos = 0,0,0
 	attPos0 = 0.158317804,0.118267357,-0.59085089
@@ -11378,7 +11378,7 @@ PART
 {
 	part = RO.FASA.ExplorerRCS_4290810966
 	partName = Part
-	persistentId = 3705276434
+	persistentId = 2030235223
 	pos = 0.331120878,2.45126247,-0.374745369
 	attPos = 0,0,0
 	attPos0 = -0.155553102,0.170961499,0.580532134
@@ -11696,7 +11696,7 @@ PART
 {
 	part = RO.FASA.ExplorerRCS_4289496418
 	partName = Part
-	persistentId = 3169250582
+	persistentId = 1002105808
 	pos = 0.642227054,2.45126247,-0.374745369
 	attPos = 0,0,0
 	attPos0 = 0.155553102,0.170961499,0.580532134
