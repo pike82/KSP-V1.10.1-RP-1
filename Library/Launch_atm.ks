@@ -130,13 +130,14 @@ Function ff_GravityTurnAoA{
 
 /////////////////////////////////////////////////////////////////////////////////////
 Function ff_CoastH{ // intended to keep a low AoA when coasting until a set altitude
-	Parameter targetAltitude, hold is false, intAzimith is 90.
+	Parameter targetAltitude, intAzimith is 90, hold is false.
 	Print "Coasting Phase".
 	LOCK Throttle to 0.
 	if hold{
 		LOCK STEERING TO ship:facing:vector. //maintain current alignment
 	}else{
-		lock pitch to 90 - VANG(SHIP:UP:VECTOR, SHIP:VELOCITY:SURFACE).
+		lock pitch to 90 - VANG(SHIP:UP:VECTOR, SHIP:VELOCITY:ORBIT).
+		LOCK STEERING TO heading(intAzimith, pitch).
 	}
 	RCS on.
 	UNTIL SHIP:Apoapsis > targetAltitude {
@@ -147,13 +148,13 @@ Function ff_CoastH{ // intended to keep a low AoA when coasting until a set alti
 /////////////////////////////////////////////////////////////////////////////////////
 
 Function ff_CoastT{ // // intended to keep a low AoA when coasting until a set time from AP
-	Parameter targetETA is 30, hold is false, intAzimith is 90.
+	Parameter targetETA is 30, intAzimith is 90, hold is false.
 	Print "Coasting Phase".
 	LOCK Throttle to 0.
 	if hold{
 		LOCK STEERING TO ship:facing:vector. //maintain current alignment
 	}else{
-		lock pitch to 90 - VANG(SHIP:UP:VECTOR, SHIP:VELOCITY:SURFACE).
+		lock pitch to 90 - VANG(SHIP:UP:VECTOR, SHIP:VELOCITY:ORBIT).
 		LOCK STEERING TO heading(intAzimith, pitch).
 	}
 	RCS on.
@@ -165,12 +166,13 @@ Function ff_CoastT{ // // intended to keep a low AoA when coasting until a set t
 /////////////////////////////////////////////////////////////////////////////////////
 
 Function ff_SpinStab{
-	Parameter intAzimith is 90, pitchdown is 0.
+	Parameter intAzimith is 90, pitchdown is 0, waiting is 0.
 	LOCK STEERING TO HEADING(intAzimith, pitchdown).
 	Print "Spin Stabilisation starting".
 	// unlock steering.
 	// SAS on.
 	// wait 0.25.
+	Wait waiting.
 	set ship:control:roll to 1.
 }
 
