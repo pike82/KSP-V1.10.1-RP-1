@@ -58,12 +58,25 @@ FUNCTION ff_COMMS {
 				PRINT event + " Antennas".
 				WAIT stageWait.
 			}	
-		}.
+		}
+
+		If event = "activate"{
+			set event to "extend antenna".
+		}else{
+			set event to "retract antenna".
+		}
+
+		FOR antennaList IN SHIP:MODULESNAMED("ModuleDeployableAntenna"){
+			IF antennaList:HASEVENT(event) {
+				antennaList:DOEVENT(event).
+				PRINT event + " Antennas".
+				WAIT stageWait.
+			}
+		}
 	}
 } // End of Function
 
 ///////////////////////////////////////////////////////////////////////////////////	
-//Credit https://github.com/KSP-KOS/KOS/issues/1522
 
 function ff_R_chutes {
 parameter event is "arm parachute".
@@ -79,7 +92,7 @@ parameter event is "arm parachute".
 }// End Function
 ///////////////////////////////////////////////////////////////////////////////////	
 
-//Confirm Parts list
+//Load Specific Parts list
 function ff_partslist{
 	Parameter name is "".
 	Global RSS_partlist is list().
@@ -109,8 +122,6 @@ function ff_Gravity{
 	Return (arr).
 }
 ///////////////////////////////////////////////////////////////////
-// credit https://gist.github.com/darkbushido/e8197aff208491c9739bd37350606ae0	
-
 
 function ff_collect_science {
 	local SL to lex(). 
@@ -202,7 +213,6 @@ function ff_Science
 }	//end function
 
 /////////////////////////////////////////
-//Credit:https://github.com/ElWanderer/kOS_scripts 
 
 FUNCTION ff_mAngle{
 PARAMETER a.
