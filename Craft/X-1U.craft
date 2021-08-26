@@ -1,5 +1,5 @@
 ship = X-1U
-version = 1.10.1
+version = 1.8.1
 description = 1: lower flaps¨2:raise flaps¨3:toggle spoiler
 type = SPH
 size = 11.2476521,5.81211948,12.7216311
@@ -12,6 +12,7 @@ OverrideDefault = False,False,False,False
 OverrideActionControl = 0,0,0,0
 OverrideAxisControl = 0,0,0,0
 OverrideGroupNames = ,,,
+upgraded = ProceduralParts 2.1 Bezier Cone Upgrader // Updates ProceduralParts Bezier Shapes to Custom Settings
 PART
 {
 	part = RO-RFTank-Seperate_4293265222
@@ -149,11 +150,12 @@ PART
 	{
 		name = ProceduralShapeBezierCone
 		isEnabled = False
-		selectedShape = Round #1
+		selectedShape = Round1
 		topDiameter = 0.800000012
 		bottomDiameter = 1
 		length = 0.5
 		stagingEnabled = True
+		shapePoints = 0.400000006,0.00100000005,1,0.600000024
 		EVENTS
 		{
 		}
@@ -6174,11 +6176,12 @@ PART
 	{
 		name = ProceduralShapeBezierCone
 		isEnabled = False
-		selectedShape = Round #1
+		selectedShape = Round1
 		topDiameter = 0.800000012
 		bottomDiameter = 1
 		length = 0.5
 		stagingEnabled = True
+		shapePoints = 0.400000006,0.00100000005,1,0.600000024
 		EVENTS
 		{
 		}
@@ -6516,11 +6519,12 @@ PART
 	{
 		name = ProceduralShapeBezierCone
 		isEnabled = False
-		selectedShape = Round #1
+		selectedShape = Round1
 		topDiameter = 0.800000012
 		bottomDiameter = 1
 		length = 0.5
 		stagingEnabled = True
+		shapePoints = 0.400000006,0.00100000005,1,0.600000024
 		EVENTS
 		{
 		}
@@ -7334,11 +7338,12 @@ PART
 	{
 		name = ProceduralShapeBezierCone
 		isEnabled = False
-		selectedShape = Round #1
+		selectedShape = Round1
 		topDiameter = 0.800000012
 		bottomDiameter = 1
 		length = 0.5
 		stagingEnabled = True
+		shapePoints = 0.400000006,0.00100000005,1,0.600000024
 		EVENTS
 		{
 		}
@@ -7676,11 +7681,12 @@ PART
 	{
 		name = ProceduralShapeBezierCone
 		isEnabled = False
-		selectedShape = Round #1
+		selectedShape = Round1
 		topDiameter = 0.800000012
 		bottomDiameter = 1
 		length = 0.5
 		stagingEnabled = True
+		shapePoints = 0.400000006,0.00100000005,1,0.600000024
 		EVENTS
 		{
 		}

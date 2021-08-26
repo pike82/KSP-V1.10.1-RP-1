@@ -1,21 +1,19 @@
 
-///// Download Dependant libraies
-
 ///////////////////////////////////////////////////////////////////////////////////
 ///// List of functions that can be called externally
 ///////////////////////////////////////////////////////////////////////////////////
-		// "FLAMEOUT", ff_FLAMEOUT@,
-		// "stage_delta_v", ff_stage_delta_v@,
-		// "burn_time", ff_burn_time@,
-		// "mdot", ff_mdot@,
-		// "Vel_Exhaust", ff_Vel_Exhaust@
+		// ff_FLAMEOUT,
+		// ff_stage_delta_v,
+		// ff_burn_time
+		// ff_mdot,
+		// ff_Vel_Exhaust
 
 /////////////////////////////////////////////////////////////////////////////////////	
 //File Functions	
 /////////////////////////////////////////////////////////////////////////////////////	
 
 FUNCTION ff_FLAMEOUT {
-	PARAMETER Ullage is "RCS", stagewait is 2, ResFrac is 0.995.
+	PARAMETER Ullage is "RCS", stagewait is 0.5, ResFrac is 0.995, Stage_offset is 0.
 	local engine_count is 0.
 	local EnginesFlameout is 0.
 	local flameout is false.
@@ -27,7 +25,9 @@ FUNCTION ff_FLAMEOUT {
 		///The following determiines the number of engines in the current stage that are flamed out.
 		LIST engines IN engList.
 		FOR eng IN engList {  //Loops through Engines in the Vessel
-			IF eng:STAGE >= STAGE:NUMBER { //Check to see if the engine is in the current Stage
+			//Print eng:Name. //DEBUG
+			//Print eng:STAGE.
+			IF (eng:STAGE + Stage_offset) >= STAGE:NUMBER { //Check to see if the engine is in the current Stage
 				Set engine_count to engine_count + 1.
 				if eng:flameout{
 					SET EnginesFlameout TO EnginesFlameout + 1. 
@@ -40,12 +40,15 @@ FUNCTION ff_FLAMEOUT {
 		If engine_count = EnginesFlameout {
 		//All engines required have flamed out
 			local RCSState is RCS. //Get the Current RCS State
+			Print "Staging".
 			RCS ON. //provide ullage
 			STAGE. //Decouple
 			PRINT "RCS Ullage".
+			Wait until stage:ready.
 			WAIT stageWait.
 			// TODOD: local propStat is "thePart":GetModule("ModuleEnginesRF"):GetField("propellantStatus"). Note this is not tested so it needs to be determined if it can work with real fuels to determine if real feuls is installed
 			STAGE. // Start next Engine(s)
+			PRINT "Engine Start".
 			Set RCS to RCSState. //stop ullage or leave RCS on if it was on before
 			Set flameout to True.
 		}
@@ -56,7 +59,7 @@ FUNCTION ff_FLAMEOUT {
 		///The following determiines the number of engines in the current stage that are flamed out.
 		LIST engines IN engList.
 		FOR eng IN engList {  //Loops through Engines in the Vessel
-			IF eng:STAGE >= STAGE:NUMBER { //Check to see if the engine is in the current Stage
+			IF (eng:STAGE + Stage_offset) >= STAGE:NUMBER { //Check to see if the engine is in the current Stage
 				Set engine_count to engine_count + 1.
 				if eng:flameout{
 					SET EnginesFlameout TO EnginesFlameout + 1.
@@ -70,7 +73,7 @@ FUNCTION ff_FLAMEOUT {
 			Wait 0.1.
 			Print "Removing throttle limits".
 			FOR eng IN engList {  //Loops through Engines in the Vessel
-				IF eng:STAGE >= STAGE:NUMBER { //Check to see if the engine is in the current Stage
+				IF (eng:STAGE + Stage_offset) >= STAGE:NUMBER { //Check to see if the engine is in the current Stage
 						SET eng:THRUSTLIMIT to 100. // Throttle up any throttle limited engines now we have less thrusters 
 				}
 			}
@@ -190,27 +193,32 @@ local fuelmass is 0.
 
 ///////////////////////////////////////////////////////////////////////////////////	
 function ff_burn_time {
-parameter dV.
+parameter dV, press is 0. // For RSS/RO engine values must be given unless they are actually burning.
 	local g is 9.80665.  // Gravitational acceleration constant used in game for Isp Calculation (m/s²)
 	local m is ship:mass * 1000. // Starting mass (kg)
 	local e is constant():e. // Base of natural log
-	local engine_count is 0.
-	local thrust is 0.
-	local isp is 0. // Engine ISP (s)
-	
+	Local engine_count is 0.
+	Local thrust is 0.
+	Local isp is 0.
 	//TODO: look at comapring the dv with the ff_stage_delta_v. If less look at the engine in the next stage and determine the delta_v and time to burn until the dv has been meet.
-	list engines in all_engines.
-	for en in all_engines if en:ignition and not en:flameout {
-	  set thrust to thrust + en:availablethrust.
-	  set isp to isp + en:isp.
-	  set engine_count to engine_count + 1.
+	If engine_count = 0{ // only evaluate is figures not given
+		list engines in all_engines.
+		for en in all_engines {
+			if en:ignition and not en:flameout {
+				set thrust to thrust + en:possiblethrust.
+				set isp to isp + en:ISPAT(press).
+				set engine_count to engine_count + 1.
+			}
+		}
 	}
-	
 	if engine_count = 0{
-		return 1. //return something to prevent error.
+		return 1. //return something to prevent error if above calcuation is used.
 	}
-	set isp to isp / engine_count. //assumes only one type of engine in cluster
-	set thrust to thrust * 1000. // Engine Thrust (kg * m/s²)
+	set isp to isp. //assumes only one type of engine in cluster
+	set thrust to thrust * 1000 * engine_count. // Engine Thrust (kg * m/s²)
+	//Print engine_count. //DEBUG
+	//Print isp. //DEBUG
+	//Print Thrust. //DEBUG
 	return g * m * isp * (1 - e^(-dV/(g*isp))) / thrust.
 }/// End Function
 

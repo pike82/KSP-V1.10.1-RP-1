@@ -1,23 +1,4 @@
-
-
-
-//Credits: Own with utilisation of code and credits within the Hill Climb file.
-
 ///// Download Dependant libraies
-
-FOR file IN LIST(
-	"Hill_Climb",
-	"OrbMnvNode",
-	"Util_Vessel",
-	"Util_Orbit"){ 
-		//Method for if to download or download again.
-
-		IF (not EXISTS ("1:/" + file)) or (not runMode["runMode"] = 0.1)  { //Want to ignore existing files within the first runmode.
-			gf_DOWNLOAD("0:/Library/",file,file).
-			wait 0.001.	
-		}
-		RUNPATH(file).
-	}
 
 
 ///////////////////////////////////////////////////////////////////////////////////

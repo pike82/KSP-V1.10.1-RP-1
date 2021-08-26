@@ -1,29 +1,11 @@
-
-//Credits: Own with utilisation of code and credits within the Hill Climb file.
-
 ///// Download Dependant libraies
-
-FOR file IN LIST(
-	"Util_Vessel",
-	"OrbMnvNode",
-	"OrbMnvs",
-	"Util_Orbit"){ 
-		IF not EXISTS("1:/" + file) {
-			RUNONCEPATH(gf_DOWNLOAD("0:/Library/",file,file)). 
-			wait 0.001.
-		}
-		RUNPATH(file).
-	}
-
 
 ///////////////////////////////////////////////////////////////////////////////////
 ///// List of functions that can be called externally
 ///////////////////////////////////////////////////////////////////////////////////
-
-    // local ORBRV is lex(
-		// "BodyTransfer", ff_BodyTransfer@,
-		// "CraftTransfer", ff_CraftTransfer@
-    // ).
+		// ff_Hohmann, Simple transfer for same inclination.
+		// ff_BodyTransfer, no longer used as this is best just done via Mechjeb.
+		// ff_CraftTransfer
 
 ////////////////////////////////////////////////////////////////
 //File Functions
@@ -33,33 +15,21 @@ FOR file IN LIST(
 
 
 FUNCTION ff_Hohmann{
-
-//Credit:https://github.com/ElWanderer/kOS_scripts and wiki
-
-//TODO:look-into hohmann transfers where can use position at(orbit,time) to determine where a body will be and then make a manuver to meet it at the same time intead of purely node iterations through hill climb.
-
 // Note this assumes a relatively circular oribit for both the Ship and the target.
 
-PARAMETER tgt, t_pe is 100000, trans_bod is Ship:BODY, inc_tgt is 0, int_Warp is false. // trans_bod should be sun for planet transfers
+PARAMETER tgt, t_pe is 0, trans_bod is Ship:BODY, inc_tgt is 0. // trans_bod should be sun for planet transfers
 	
 	Local Curr_time is time:seconds.
 	Print "Curr_time: "+ Curr_time.
-	LOCAL Ship_Orbit is ORBITAT(SHIP,Curr_time). //ORBITAT(orbitable,time) is KOS in-built function
-	LOCAL tgt_Orbit is ORBITAT(tgt,Curr_time).
+	LOCAL Ship_Orbit is ORBITAT(SHIP, Curr_time). //ORBITAT(orbitable,time) is KOS in-built function
+	LOCAL tgt_Orbit is ORBITAT(tgt, Curr_time).
 	LOCAL r1 is Ship_Orbit:SEMIMAJORAXIS.
 	LOCAL r2 is tgt_Orbit:SEMIMAJORAXIS + t_pe.
 	
-	Print Ship_Orbit. 
-	Print tgt_Orbit.
-	Print r1.
-	Print r2.
-	
-	Print trans_bod:MU.
-	
 	LOCAL dvDepart is SQRT(trans_bod:MU/r1) * (SQRT((2*r2)/(r1+r2)) -1). // wiki Dv1 Equation
 	LOCAL dvArrive is SQRT(trans_bod:MU/r1) * (1- SQRT((2*r2)/(r1+r2))). // wiki Dv2 Equation
-	Print dvDepart.
-	Print dvArrive.
+	//Print dvDepart. //DEBUG
+	//Print dvArrive. //DEBUG
 	
 	if r2 < r1 { 
 		SET dvDepart TO -dvDepart. // this allows for transfers to a lower orbit
@@ -69,10 +39,10 @@ PARAMETER tgt, t_pe is 100000, trans_bod is Ship:BODY, inc_tgt is 0, int_Warp is
 	if -dvDepart = dvArrive {
 		set dvArrive to 0. // allows for transfers within the same SOI where the dv arrive and depart are the same.
 	}
-	Print "dvArrive: " + dvArrive.
+	//Print "dvArrive: " + dvArrive. //DEBUG
 
 	local dv is dvDepart + dvArrive.
-	Print "dv int:" + dv.
+	// Print "dv int:" + dv.  //DEBUG
 	LOCAL Trans_time is CONSTANT:PI * SQRT( ((r1+r2)^3) / (8 * trans_bod:MU) ). // wiki transfer orbit time Equation
 	Print "Trans_time: "+ Trans_time.
 	Print tgt_Orbit:PERIOD.
@@ -91,72 +61,48 @@ PARAMETER tgt, t_pe is 100000, trans_bod is Ship:BODY, inc_tgt is 0, int_Warp is
 	LOCAL ship_normal IS VCRS(VELOCITYAT(SHIP,curr_time):ORBIT,ship_pos).// the plane of the ship
 	LOCAL ship_tgt_cross IS VCRS(ship_pos,tgt_pos).//// plane of the transfer (ie. incination diference)
 	
-	Print ship_normal.
-	Print ship_tgt_cross.
-	
-	Print VDOT(ship_normal, ship_tgt_cross).
+	//Print ship_normal.  //DEBUG
+	//Print ship_tgt_cross.  //DEBUG
 	
 	if VDOT(ship_normal, ship_tgt_cross) > 0 { 
 		SET start_phi TO 360 - start_phi. 
 	} // this checks to see if the planes are pointed in the same direction or are pointed opposite to one another so it is known if ship is leading or lagging the tgt. 
 
 	LOCAL phi_delta is ff_mAngle(start_phi - desired_phi). //this determines how far off the best phase angle is.
-	Print "phi_delta: " + phi_delta.
+	//Print "phi_delta: " + phi_delta.  //DEBUG
 	if rel_ang_Change < 0 { 
 		SET phi_delta TO phi_delta - 360. //adjust for negative angle change values
 	}
-	Print rel_ang_Change.
-	Print (phi_delta / rel_ang_Change).
-	Print Curr_time.
+	// Print rel_ang_Change. //DEBUG
+	// Print (phi_delta / rel_ang_Change). //DEBUG
+	// Print Curr_time. //DEBUG
 	Local node_time is Curr_time + (phi_delta / rel_ang_Change).
-	Print node_time.
+	// Print node_time. //DEBUG
 	LOCAL first_est is NODE(node_time, 0, 0, dv). // this creates the node (best refined by a hill climb) which can be used to gain a good first approximation of the time required to speed up the solution.
-	wait 1.0.
+	wait 1.0. //ensures node is created.
 	Print "Node time: " + node_time.
 	Print "DV: " + dv.
-	Wait 5.
-	
-	
-	if runMode:haskey("ff_Node_exec") {
-		ff_Node_exec(int_Warp).		
-	} //end runModehaskey if
-	Else{	
-		hf_seek_SOI(tgt, t_pe, inc_tgt, dv*1.2, Curr_time + (phi_delta / rel_ang_Change), 0, 0, dv).
-		ff_Node_exec(int_Warp).
-	} //end else
 }
 
+///////////////////////////////////////////////////////////////////////////////////
+//Used to transfer between one SOI to another.
 Function ff_BodyTransfer {	
-Parameter target_Body, Target_Perapsis, maxDV is 1000, IncTar is 90, int_Warp is False. // note the target name does not need to be sourrounded by quotations
-	if runMode:haskey("ff_Node_exec") {
-		ff_Node_exec(int_Warp).		
-	} //end runModehaskey if
-	Else{	
-		hf_seek_SOI(target_Body, Target_Perapsis, IncTar, maxDV).
-		ff_Node_exec(int_Warp).
-	} //end else
 }  /// End Function
 	
 ///////////////////////////////////////////////////////////////////////////////////
 
-//Credits: Own
-	
 Function ff_CraftTransfer {	
-	Parameter target_ves, Target_dist, Max_orbits, int_Warp is False. // note the target name does not need to be surrounded by quotations
-	if runMode:haskey("ff_Node_exec") {
-		ff_Node_exec(int_Warp).		
-	} //end runModehaskey if
-	if runMode:haskey("ff_Node_exec") = false{
-		gf_set_runmode("ff_CraftTransfer",1).
-		hf_TransferInc(target_ves, Target_dist, int_Warp).
+	Parameter target_ves, Target_dist, Exec, Max_orbits is 1. // note the target name does not need to be surrounded by quotations
+	If Exec = 1 {
+		hf_TransferInc(target_ves, Target_dist).
 	}//end if
-	If runMode["ff_CraftTransfer"] = 1{
+	If Exec = 2 {
 		Set temp to hf_TransferBurn(target_ves, Target_dist, Max_orbits, int_Warp).
 		gf_set_runmode("ff_CraftTransferBurn",temp).
 		gf_set_runmode("ff_CraftTransfer",2).
 		ff_Node_exec(int_Warp).
 	}//end if
-	If runMode["ff_CraftTransfer"] = 2{
+	If Exec = 3{
 		if time:seconds < runMode["ff_CraftTransferBurn"]{
 			//Checks to see if this node has been completed in the first if statement to allow a follow up mid cousrse burn. If so skip this step and just remove the runmodes.
 			hf_TransferRV(target_ves, Target_dist, runMode["ff_CraftTransferBurn"], int_Warp).
@@ -169,44 +115,6 @@ Function ff_CraftTransfer {
 ///////////////////////////////////////////////////////////////////////////////////
 //Helper Functions
 /////////////////////////////////////////////////////////////////////////////////////
-//Credits: http://youtube.com/gisikw
-	  
-function hf_seek_SOI {
-	parameter target_body, target_periapsis, IncTar, maxDV,
-		  start_time is time:seconds + 600, r is 0, n is 0, p is 0. 
-		  Print "Seeking SOI".
-	local data is ff_Seek_low (
-		start_time, r, n, p, 
-		{  
-		parameter mnv.
-		if hf_transfers_to(mnv:orbit, target_body) return 1.
-		//TODO: put in inorge capability using "target_orbit:hasnextpatch and target_orbit:nextpatch:body <> target_body" so that it will ignore/is sceptical of results which use another body for a gravity assist as boundary cases around this can affect the hill climb results.
-		return -hf_closest_approach
-			(
-			target_body,
-			time:seconds + mnv:eta,
-			time:seconds + mnv:eta + mnv:orbit:period
-			). // seeks out the closest approach from the mnv node created
-		} //end seek parameter
-	). //stores the results as a data set enabling a search within another search. This Level is the inner search
-	Print "SOI Found Refining solution".
-	return ff_Seek_low(
-		data[0], data[1], data[2], data[3], 
-		{
-		parameter mnv.
-		if not hf_transfers_to(mnv:orbit, target_body) return -2^64. // failure to be within the SOI make score really low
-		if (mnv:DELTAV:mag > maxDV) return -2^64. // failure to be under max dv make score really low
-		//Print "Per: " + (mnv:orbit:nextpatch:periapsis - target_periapsis).
-		//Print "Inc: " +(mnv:orbit:nextpatch:inclination-IncTar).
-		return -(abs((mnv:orbit:nextpatch:periapsis - target_periapsis)*1000))-(mnv:DELTAV:mag*100)-(abs(mnv:orbit:nextpatch:inclination-IncTar)*10).// 1000m = 10m/s = 1 degree of inclination
-		} //end seek parameter
-	). // this level is the outter search and uses the data parameter to do internal searches per step
-
-}  /// End Function
-
-
-///////////////////////////////////////////////////////////////////////////////////
-//Credits: Own
 	  
 function hf_TransferInc {
 parameter target_vessel, target_distance, int_Warp is False.
@@ -230,7 +138,6 @@ parameter target_vessel, target_distance, int_Warp is False.
 		Print "AN Inc" + AN_inc.
 		ff_AdjPlaneInc(0, target_vessel,(Max_inc/4),int_Warp). //Conduct inc change is required.
 	} // end else
-	
 } //end function TransferInc
 
 ///////////////////////////////////////////////////////////////////////////////////	
@@ -436,15 +343,6 @@ parameter target_vessel, target_distance, result, int_Warp is False.
 	, true
 	). ///End Hill Climb	
 } //end function transfer RV
-
-///////////////////////////////////////////////////////////////////////////////////	
-//Credits: http://youtube.com/gisikw
-	  
-function hf_transfers_to {
-parameter target_orbit, target_body.
-return (target_orbit:hasnextpatch and
-		target_orbit:nextpatch:body = target_body). // returns true if the next patch is the intended target. (look at making this potentially search through the patches to make work for sling shots via the mun etc.)
-}/// End Function
 
 ///////////////////////////////////////////////////////////////////////////////////		  
 //Credits: http://youtube.com/gisikw

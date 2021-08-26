@@ -1,30 +1,14 @@
 
-//General Credits with ideas from the following:
-// Kevin Gisi: http://youtube.com/gisikw
-// KOS Community library
-// https://github.com/KK4TEE/kOSPrecisionLand
-
-
-///// Dependant libraies
-
-	// "Flight",
-	// "Util_Vessel",
-	// "Util_Launch",
-	// "Util_Engine",
-	// "Util_Orbit"
-
 ///////////////////////////////////////////////////////////////////////////////////
 ///// List of functions that can be called externally
 ///////////////////////////////////////////////////////////////////////////////////
-	// "preLaunch"
-	// "liftoff"
-	// "liftoffclimb"
-	// "GravityTurnAoA"
-	// "GravityTurnPres", ff_GravityTurnPres@,
-	// "CoastH"
-	// "CoastT"
-	// "InsertionPIDSpeed", ff_InsertionPIDSpeed@,
-	// "InsertionPEG", ff_InsertionPEG@
+	// "preLaunch" // Conducts Pre-launch checks pre-ignition
+	// "liftoff" // Conducts ignition checks and releases
+	// "liftoffclimb" // Conducts intial climb out and pitch over
+	// "GravityTurnAoA" //This gravity turn tries to hold the minimum AoA until the first stage cut-out
+	// "CoastH" // intended to keep a low AoA when coasting until a set altitude
+	// "CoastT" // intended to keep a low AoA when coasting until a set time from AP
+	// "Orbit_Steer"  //Uses PEG insertion for upto three stages
 
 ////////////////////////////////////////////////////////////////
 //File Functions
@@ -47,10 +31,10 @@ Function ff_preLaunch {
 		//IF eng:STAGE = STAGE:NUMBER { //Check to see if the engine is in the current Stage, Note this is only used if you want a specific stage gimbal limit, otherwise it is applied to all engines
 			IF eng:HASGIMBAL{ //Check to see if it has a gimbal
 				SET eng:GIMBAL:LIMIT TO gimbalLimit. //if it has a gimbal set the gimbal limit
-				Print "Gimbal Set".
 			}
 		//}
 	}
+	Print "Gimbal limits Set".
 } /// End Function	
 		
 /////////////////////////////////////////////////////////////////////////////////////	
@@ -63,11 +47,11 @@ Function ff_liftoff{
 	Local MaxEngineThrust is 0. 
 	Wait until Stage:Ready. 
 	Local englist is List().
-	List Engines.
+	//List Engines. //DEBUG
 	LIST ENGINES IN engList. //Get List of Engines in the vessel
 	FOR eng IN engList {  //Loops through Engines in the Vessel
-		Print "eng:STAGE:" + eng:STAGE.
-		Print STAGE:NUMBER.
+		// Print "eng:STAGE:" + eng:STAGE. //DEBUG
+		//Print STAGE:NUMBER. //DEBUG
 		IF eng:STAGE >= STAGE:NUMBER { //Check to see if the engine is in the current Stage
 			SET MaxEngineThrust TO MaxEngineThrust + eng:MAXTHRUST. 
 			Print "Stage Full Engine Thrust:" + MaxEngineThrust. 
@@ -78,9 +62,9 @@ Function ff_liftoff{
 	until CurrEngineThrust > (thrustMargin * MaxEngineThrust){ // until upto thrust or the engines have attempted to get upto thrust for more than 5 seconds.
 		Set CurrEngineThrust to 0.//reset each loop
 		FOR eng IN engList {  //Loops through Engines in the Vessel
-			//Print eng:name. //debugger
+			//Print eng:name. //DEBUG
 			IF eng:STAGE >= STAGE:NUMBER { //Check to see if the engine is in the current Stage
-				//Print eng:THRUST. //debugger
+				//Print eng:THRUST. //DEBUG
 				SET CurrEngineThrust TO CurrEngineThrust + eng:THRUST. //add thrust to overall thrust
 			}
 		}
@@ -89,10 +73,10 @@ Function ff_liftoff{
 			Set SHIP:CONTROL:PILOTMAINTHROTTLE TO 0.
 			Print "Engine Start up Failed...Making Safe".
 			Shutdown. //ends the script
-			//Print "CurrEngineThrust: " + CurrEngineThrust. //debugger
+			//Print "CurrEngineThrust: " + CurrEngineThrust. //DEBUG
 		}
-		Print "CurrEngineThrust: " + CurrEngineThrust. //debugger
-		Print "MaxEngineThrust: " + (thrustMargin * MaxEngineThrust). //debugger
+		//Print "CurrEngineThrust: " + CurrEngineThrust. //DEBUG
+		//Print "MaxEngineThrust: " + (thrustMargin * MaxEngineThrust). //DEBUG
 		wait 0.1.
 	}
 	Print "Releasing Clamps".
@@ -115,16 +99,16 @@ Function ff_liftoffclimb{
 }// End of Function
 	
 /////////////////////////////////////////////////////////////////////////////////////		
-///This gravity turn tries to hold the minimum AoA until the first stage cut-out
+//This gravity turn tries to hold the minimum AoA until the first stage cut-out
 Function ff_GravityTurnAoA{	
-	PARAMETER intAzimith is 90, ullage is "RCS", Flametime is 1.0, Res is 0.995. 
+	PARAMETER intAzimith is 90, ullage is "RCS", Flametime is 0.5, Res is 0.995, offset is 0. 
 	Print "Gravity Turn AOA".
 	lock pitch to 90 - VANG(SHIP:UP:VECTOR, SHIP:VELOCITY:SURFACE).
 	LOCK STEERING TO heading(intAzimith, pitch).
 	Local Endstage is false.
 	Until Endstage {
-		set Endstage to ff_Flameout(ullage, Flametime, Res).
-		Wait 0.05.
+		set Endstage to ff_Flameout(ullage, Flametime, Res, offset).
+		Wait 0.01.
 	}
 } // End of Function
 
@@ -164,351 +148,917 @@ Function ff_CoastT{ // // intended to keep a low AoA when coasting until a set t
 }// End of Function
 
 /////////////////////////////////////////////////////////////////////////////////////
-
-Function ff_SpinStab{
-	Parameter intAzimith is 90, pitchdown is 0, waiting is 0.
-	LOCK STEERING TO HEADING(intAzimith, pitchdown).
-	Print "Spin Stabilisation starting".
-	// unlock steering.
-	// SAS on.
-	// wait 0.25.
-	Wait waiting.
-	set ship:control:roll to 1.
-}
-
-/////////////////////////////////////////////////////////////////////////////////////
-// Credit: Own recreated from ideas in mix of general
-Function ff_InsertionPIDSpeed{ // PID Code stepping time to Apo. Note this can only attempt to launch into a circular orbit
-PARAMETER 	ApTarget, ullage is "RCS", Kp is 0.3, Ki is 0.0002, Kd is 12, PID_Min is -0.1, PID_Max is 0.1, 
-			vKp is -0.01, vKi is 0.0002, vKd is 12, vPID_Min is -10, vPID_Max is 1000.
-	
-	//TODOD: Find out the desired velocity of the AP Target and make this the desired velocity and have the loop cut out when the desired velocity is reached.
-	
-	Set highPitch to 30.	///Intital setup TODO: change this to reflect the current pitch
-	LOCK STEERING TO HEADING(sv_intAzimith, highPitch). //move to pitchover angle
-	Set PIDALT to PIDLOOP(vKp/((ship:maxthrust/ship:mass)^2), vKi, vKd, vPID_Min, vPID_Max). // used to create a vertical speed
-	Set PIDALT:SETPOINT to 0. // What the altitude difference to be zero
-	//TODO: Look into making the vertical speed also dependant of the TWR as low thrust upper stages may want to keep a higher initial vertical speed.
-	
-	Set PIDAngle to PIDLOOP(Kp, Ki, Kd, PID_Min, PID_Max). // used to find a desired pitch angle from the vertical speed. 
-		
-	
-	UNTIL ((SHIP:APOAPSIS > sv_targetAltitude) And (SHIP:PERIAPSIS > sv_targetAltitude))  OR (SHIP:APOAPSIS > sv_targetAltitude*1.1){
-		ff_Flameout(ullage).
-		ff_FAIRING().
-		ff_COMMS().
-		
-		Set PIDALT:KP to vKp/((ship:maxthrust/ship:mass)^2). //adjust the kp values and therefore desired vertical speed based on the TWR^2
-		
-		SET ALTSpeed TO PIDALT:UPDATE(TIME:SECONDS, ApTarget-ship:altitude). //update the PID with the altitude difference
-		Set PIDAngle:SETPOINT to ALTSpeed. // Sets the desired vertical speed for input into the pitch
-		
-		SET dPitch TO PIDAngle:UPDATE(TIME:SECONDS, Ship:Verticalspeed). //used to find the change in pitch required to obtain the desired vertical speed.
-		Set highPitch to (highPitch + dPitch). //current pitch setting plus the change from the PID
-		
-		Clearscreen.
-		
-		Print "Time to AP:" + (gl_apoEta).
-		Print "Desired Vertical Speed:" + (ALTSpeed).		
-		Print "Current Vertical Speed:" + (Ship:Verticalspeed).
-		Print "Pitch Correction:" + (dPitch).
-		Print "Desired pitch:" + (highPitch).
-		Print "PIDAngle:PTerm:"+ (PIDAngle:PTerm).
-		Print "PIDAngle:ITerm:"+ (PIDAngle:ITerm).
-		Print "PIDAngle:DTerm:"+ (PIDAngle:DTerm).
-		Print "PIDAlt:PTerm:"+ (PIDAlt:PTerm).
-		Print "PIDAlt:ITerm:"+ (PIDAlt:ITerm).
-		Print "PIDAlt:DTerm:"+ (PIDAlt:DTerm).
-		//Switch to 0.
-		//Log (TIME:SECONDS - StartLogtime) +","+ (highPitch) +","+(gl_apoEta) +","+ (dPitch) +","+ (PIDAngle:PTerm) +","+ (PIDAngle:ITerm) +","+ (PIDAngle:DTerm) to Apo.csv.
-		//Switch to 1.
-		Wait 0.1.
-	}	/// End of Until
-	//TODO: Create code to enable this to allow for a different AP to PE as required, rather than just circularisation at AP.
-	Unlock STEERING.
-	LOCK Throttle to 0.
-
-}// End of Function	
-	
-
-/////////////////////////////////////////////////////////////////////////////////////
-// Credits: Own modifications to:
+// Uses PEG insertion for upto three stages
+// References:
 // http://www.orbiterwiki.org/wiki/Powered_Explicit_Guidance
 //With Large assisstance and corrections from:
 // https://github.com/Noiredd/PEGAS
 // https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/19660006073.pdf
 // https://amyparent.com/post/automating-rocket-launches/
-Function ff_InsertionPEG{ // PEG Code
 
-parameter tgt_pe. //target periapsis
-parameter tgt_ap. //target apoapsis
-parameter tgt_inc. //target inclination
-parameter u is 0. // target true anomaly in degrees(0 = insertion at Pe)
-parameter ullage is "RCS".
-    
+//Dependant Libraries
+// Util_Vessels
+// Util_Engines
+
+function ff_Orbit_Steer{
+	Parameter 
+	Stages,
+	tgt_pe,
+	tgt_ap,
+	sv_intAzimith,
+	u is 0,//Target true anomoly
+	HSL is 5, //end shutdown margin
+//Stage 3
+	T3 is 170, // stage three estimated burn length
+	mass_flow3 is 115, //estimated mass flow(kg/s)
+	start_mass3 is 30745, //estimated start mass in kg
+	s_Ve3 is 3060, //estimated exhuast vel (thrust(N)/massflow(kg/s))
+	tau3 is 200, //(S-Ve/avg_acc) estimated effective time to burn all propellant S-Ve = ISP*g0
+//Stage 2 //
+	T2 is 0, // stage two estimated burn length
+	mass_flow2 is 1, //estimated mass flow(kg/s)
+	start_mass2 is 1, //estimated start mass in kg
+	s_Ve2 is 1, //estimated exhuast vel (thrust(kN)/massflow(kg/s))
+	tau2 is 1, //(S-Ve/avg_acc) estimated effective time to burn all propellant
+//Stage 1 //
+	T1 is 0, // stage one estimated burn length
+	mass_flow1 is 0, //estimated mass flow
+	s_Ve1 is 1, //estimated exhuast vel (do not make 0)
+	tau1 is 1. //(S-Ve/avg_acc) estimated effective time to burn all propellant
+
+// determine T intial paramenters based on the number of stages.
+	If Stages < 2{
+		Set T2 to 0.
+	}
+	If Stages < 3{
+		Set T1 to 0.
+	}
+
+	local Thrust2 is s_Ve2 * mass_flow2.
+	local Thrust3 is s_Ve3 * mass_flow3.
+
+//starting peg variables
+    local A1 is -0.3.
+    local B1 is 0. 
+    local C1 is 0.1. 
+
+    local A2 is -0.15. 
+    local B2 is 0. 
+    local C2 is 0.1.
+
+	local A3 is 0. 
+    local B3 is 0. 
+    local C3 is 0.1. 
+
+    local converged is 0. // used by convergence checker
+	Local int_pitch is 90 - VANG(SHIP:UP:VECTOR, SHIP:VELOCITY:ORBIT). //locked picth prior to convergence.
+    local delta is 0. //time between peg loops
+	local peg_step is 1.0.//time between each calcuation check
+	local A is 0.
+	local B is 0.
+	local C is 0.
+	local s_pitch is 20.
+
+	local dA1 is 0.
+	local dA2 is 0.
+	local dB1 is 0.
+	local dB2 is 0.
+
+	//values setup
     set ra to body:radius + tgt_ap. //full Ap
     set rp to body:radius + tgt_pe. //full pe
-	Print "tgtra " + tgt_ap.
-	Print "tgtrp " + tgt_pe.
-	Print body:radius.
-	Print "ra " + ra.
-	Print "rp " + rp.
-
-	//TODO: Look at replaceing some of the belwo with the Util Orbit Functions or including it in the Util orbit functions.
-	
     local sma is (ra+rp)/2. //sma
     local ecc is (ra-rp)/(ra+rp). //eccentricity
-    local vp is sqrt((2*body:mu*ra)/(rp*2*sma)).
-	Print "vp " +vp.
-    local rc is (sma*(1-ecc^2))/(1+ecc*cos(u)). // this is the target radius based on the desire true anomoly
-    print "rc "+rc.
-    local vc is sqrt((vp^2) + 2*body:mu*((1/rc)-(1/rp))). // this is the target velocity at the target radius
-    print "vc "+vc.
-    local uc is 90 - arcsin((rp*vp)/(rc*vc)).
-    
-    set tgt_r to rc.
-    set tgt_vy to vc*sin(uc). // this is the split of the target velocity at the point in time
-    set tgt_vx to vc*cos(uc). // this is the split of the target velocity at the point in time
-    
-    set tgt_h to vcrs(v(tgt_r, 0, 0), v(tgt_vy, tgt_vx, 0)):mag.
+    local vp is sqrt((2*body:mu*ra)/(rp*2*sma)). // this is the target velocity at the periapsis
+	if u = 0 { //u=0 means PE is target position in orbit
+    	set tgt_vy to 0. // this is the split of the target velocity at the point in time
+    	set tgt_vx to vp. // this is the split of the target velocity at the point in time (should be zero for u = 0)
+		set rc to rp. // this is the target radius based on the desire true anomoly
+	}else{
+		set rc to (sma*(1-ecc^2))/(1+ecc*cos(u)). // this is the target radius based on the desire true anomoly
+    	local vc is sqrt((vp^2) + 2*body:mu*((1/rc)-(1/rp))). // this is the target velocity at the target radius (if u is zero this will equal vp)
+    	local uc is 90 - arcsin((rp*vp)/(rc*vc)). // this is the direction vector of the target velocity
+    	set tgt_vy to vc*sin(uc). // this is the split of the target velocity at the point in time
+    	set tgt_vx to vc*cos(uc). // this is the split of the target velocity at the point in time (should be zero for u = 0)
+	}
 
-    Print "PEG convergence enabled".
-    
-    local last is missiontime. //missiontime is a KOS variable which gets this ingame Misson elased time for the craft
-    local A is 0. //peg variable
-    local B is 0. //peg variable
-    local C is 0. //peg variable
-    local converged is -10.
-    local delta is 0. //time between peg loops
-	local T is 100. //intial guess on time to thrust cut off
-	local peg_step is 0.1.
-    
+    // Define target position and velocities
+
+	local tgt_r is rc.
+    Local tgt_h is vcrs(v(tgt_r, 0, 0), v(tgt_vy, tgt_vx, 0)):mag. // target angular momentum. This is the velocity represented as energy at a point made up of the x and y components.
+	Local tgt_w is sqrt((tgt_vx^2) + (tgt_vy^2)) / (tgt_r).
+
+	Local fairlock is false.
+	local tau_lock is false.
+
+	Print "PEG Values set up".
+	Print ship:mass.
+	Print ship:drymass.
+	SET STEERINGMANAGER:MAXSTOPPINGTIME TO 1.//can adjust for strenth/speed of changes to steeering control
+
+
+    local rTcur is MISSIONTIME. //Bound KOS time since CPU launch.
+	local last is MISSIONTIME.
+	local lastM is MISSIONTIME.
     local s_r is ship:orbit:body:distance.
-    //local s_acc tis ship:sensors:acc:mag.
-    local s_acc is ship:AVAILABLETHRUST/ship:mass.
-	Print "s_acc " + s_acc.
-    local s_vy is ship:verticalspeed.
-    local s_vx is sqrt(ship:velocity:orbit:sqrmagnitude - ship:verticalspeed^2).
-	
-	local s_ve is Util_Engine["Vel_Exhaust"]().
-	local tau is s_ve/s_acc.
-	
-    local peg is hf_peg_cycle(A, B, T, peg_step, tau, tgt_vy, tgt_vx, tgt_r, s_vy, s_vx, s_r, s_acc).  // inital run through the cycle with first estimations
-    wait 0.001.
-    Print "Entering Convergence loop".
+	local s_acc is ship:AVAILABLETHRUST/ship:mass.
+	local s_vy is ship:verticalspeed.
+	local s_vx is sqrt(ship:velocity:orbit:sqrmagnitude - ship:verticalspeed^2).
+	local w is s_vx / s_r.
+	local s_ve is ff_Vel_Exhaust().
+	local tau is s_ve/s_acc. //time to burn ship if all propellant
+	local w_T1 is w*1.01. //first guess at tgt_w which is actually the current w plus 1%.
+	local rT1 is s_r + ((tgt_r-s_r)*0.75). //first guess at rT1
+	local w_T2 is w_T1*1.01. 
+	local rT2 is s_r + ((tgt_r-s_r)*0.9). //first guess at rT2
+	local w_T3 is w_T2*1.01. 
+	local rT3 is tgt_r. //first guess at rT3
+	local hT1 is tgt_h *0.98.
+	local hT2 is tgt_h *0.99.
+	local hT3 is tgt_h.
+
+	Clearscreen.
+	local loop_break to false.
 	//Loop through updating the parameters until the break condition is met
+	//Line 1: Last Action
+	//Line 2: Current Phase
+	//Line 3: Tau State
+	//Line 4: Loop Guidance
+	//Line 5: Loop
+	//Line 6: T
+	//Line 7: Pitch
+	Print "tau unlocked" AT (0,3).
     until false {
-        
+
+		if (SHIP:Q < 0.005) and (fairlock = false) {
+			ff_Fairing().
+			Print "Fairings Delpolyed: " + MISSIONTIME AT (0,1).
+			set fairlock to true.
+		}
+		//Collect updated time periods
+        set rTcur to MISSIONTIME.
+		Set DeltaM to rTcur - LastM. // time since last major (outside) calc loop
+		set delta to rTcur - last. // time since last minor (inside) calculation loop
+		set LastM to rTcur. // reset last major calculation
+		set A to A + (B*DeltaM).
+
+		// collect current ship parameters
         set s_r to ship:orbit:body:distance.
-		//set s_acc to ship:sensors:acc:mag.
 		set s_acc to ship:AVAILABLETHRUST/ship:mass.
 		set s_vy to ship:verticalspeed.
 		set s_vx to sqrt(ship:velocity:orbit:sqrmagnitude - ship:verticalspeed^2).
-		Set tau to s_ve/s_acc.
-        set delta to missiontime - last. // set change to base time the PEG Started and now
-		Print "Mission Time " + missiontime.
-        //Set last to missiontime. // create a new last MET for the next loop
-		Print "delta " + delta.
-		Print "peg_step " + peg_step.
-		
-        if(delta >= peg_step) {  // this is used to ensure a minimum time step occurs before undertaking the next peg cycle
-            Print "Convergence Step".
-			Set peg to hf_peg_cycle(A, B, T, delta, tau, tgt_vy, tgt_vx, tgt_r, s_vy, s_vx, s_r, s_acc).
-			Set last to missiontime.
-			if abs( (T-2*delta)/peg[3]-1 ) < 0.01 {  //if the time returned is within 1% of the old T guess to burnout allow convergence to progress 
-				//ClearScreen.
-                if converged < 0 {
-                    set converged to converged+1. //(this is done over ten ticks to ensure the convergence solution selected is accurate enough over ten ship location updates rather than relying on only one convergence solution to enter a closed loop)
-					Print "Convergence step +1".
-                } else if converged = 0 {
-                    set converged to 1.
-                    Print("closed loop enabled").
-                }
-            } 
+		set w to s_vx / s_r.
+		Local h is vcrs(v(s_r, 0, 0), v(s_vy, s_vx, 0)):mag. 
 
-            set A to peg[0].
-            set B to peg[1].
-            set C to peg[2].
-            set T to peg[3].
-            
-        }
+		If tau_lock = false{
+			set s_ve to ff_Vel_Exhaust().
+			Set tau to s_ve/s_acc.
+		} else{
+			Set tau to 300.
+		}
 
-        //set s_pitch to (A + B*T + C). //wiki Estimation fr,T = A + B*T + C noting T in this instance is the T until the estimated next step so its really delta or just zero if you consider what it should be now.
-        set s_pitch to (A + B*delta + C). //wiki Estimation fr,T = A + B*T + C noting T in this instance is the T until the estimated next step so its really delta or just zero if you consider what it should be now.
-		//set s_pitch to max(-1, min(s_pitch, 1)). // limit the pitch change to between 1 and -1 with is -90 and 90 degress
-        //set s_pitch to arcsin(s_pitch). //covert into degress
-		
-        if converged = 1 {
 
-			If Util_Vessel["Tol"](orbit:inclination, tgt_inc, 0.1){
-				LOCK STEERING TO heading(ship:heading, s_pitch).
+		if T1> 0 and (tau_lock = false){
+			Print "IGM Phase 1" AT (0,2).
+			Set T1 to T1 - DeltaM.
+			Set A1 to A1 + (B1 * DeltaM).
+			Print "T1:" + T1 AT (0,6).
+			if T1 < 3 { 
+				Set tau_lock to true.
+				Print"tau locked" AT (0,3).
 			}Else{
-				LOCK STEERING TO heading(ff_FlightAzimuth(tgt_inc, tgt_vx), s_pitch).
+				set s_Ve1 to s_ve.
+				set tau1 to tau.
 			}
-			ClearScreen.
-			Print "closed loop Steering".
-			Print "Pitch: " + s_pitch.
-			Print (A + B*T + C).
-			Print "A: " + A.
-			Print "B: " + B.
-			Print "C: " + C.
-			Print "T: " + T.
-			Print "CT:" + peg[4].
-			Print "dv:" + peg[5].
-			Print "delta: " + delta.
-			Print "missiontime: " + missiontime.
-			Print abs(T - delta).
-			
-            if(abs(T - delta) < 1) {
-                break. //break when the time left to burn minus the last step incriment  is less than 0.2 seconds remaining so we do not enter that last few step(s) where decimal and estmation accuracy becomes vital.
-            }
-        }
+		}
 
-        wait 0.01. 
-    }
-    
-	Unlock STEERING.
-	LOCK Throttle to 0.
-    set ship:control:pilotmainthrottle to 0.
-    
-    // Print "SECO".
-    // for e in s_eng {
-        // if e:ignition and e:allowshutdown {
-            // //e:shutdown.
-        // }
-    // }
-    //set ship:control:neutralize to true.
-    //set g_steer to ship:prograde.
-    wait 30.
+		if (T2> 0)  and (T1 = 0) and (tau_lock = false){
+			Print "IGM Phase 2" AT (0,2).
+			Set T2 to T2 - DeltaM.
+			Set A2 to A2 + (B2 * DeltaM).
+			Print "T2:" + T2 AT (0,6).
+			if T2 < 3 {
+				Set tau_lock to true.
+				Print "tau locked" AT (0,3).
+			}Else{
+				set s_Ve2 to s_ve.
+				set tau2 to tau.
+			}
+		}
+
+		if T3> 0 and (T2 = 0) and (tau_lock = false){
+			Print "IGM Phase 3" AT (0,2).
+			Set T3 to T3 - DeltaM.
+			Print "T3:" + T3 AT (0,6).
+			Set A3 to A3 + (B3 * DeltaM).
+			set s_Ve3 to s_ve.
+			set tau3 to tau.
+		}
+		// Print "AVAILABLETHRUST:" +AVAILABLETHRUST.//DEBUG
+		if (AVAILABLETHRUST < 5) {
+			Stage.// release
+			wait 0.1.
+			Wait until Stage:Ready . 
+			If T1=0{
+				Set T2 to 0.
+			} Else {
+				Set T1 to 0.
+			}
+			//Set T2 to 0. //end phase 2
+			Print "Staging" AT (0,1).
+			Stage.// start next engine
+			wait 3.
+			Set tau_lock to false.
+			Print "Tau unlocked" AT (0,3).
+			set s_acc to ship:AVAILABLETHRUST/ship:mass.//needs to be reset from remainder of loop
+			//SET STEERINGMANAGER:MAXSTOPPINGTIME TO 1.
+		}
+
+		//cutoff process
+		if  (T3 < HSL) and (tau_lock = true) and (T2 = 0){
+			Until false{
+				set s_vx to sqrt(ship:velocity:orbit:sqrmagnitude - ship:verticalspeed^2).
+				if (tgt_vx -2) < s_vx{
+					lock Throttle to 0.
+					RCS on.
+					SET SHIP:CONTROL:FORE TO 1.0.
+					Local track is time:seconds.
+					until (ship:orbit:eccentricity < 0.0001) or (ship:periapsis > tgt_pe) or (tgt_vx < s_vx) or (time:seconds > track + 30){
+						wait 0.01.
+						set s_vx to sqrt(ship:velocity:orbit:sqrmagnitude - ship:verticalspeed^2).
+					}
+					SET SHIP:CONTROL:FORE TO 0.0.
+					RCS off.
+					Print "Insertion: "+ (TIME:SECONDS) AT (0,1).
+					Set loop_break to true.
+					break.
+				}
+				//Print tgt_vx. //DEBUG
+				//Print s_vx. //DEBUG
+				wait 0.001.
+			}
+		}
+		
+		//////////PEG Minor loop//////////////////////
+    	If (delta >= peg_step) and (tau_lock = false){  // this is used to ensure a minimum time step occurs before undertaking the next peg cycle calculations
+			Set last to MISSIONTIME.//reset major calculation loop
+			/// determine peg states
+			local peg_solved is hf_PEG(A1, B1, T1, rT1, hT1, w_T1, s_ve1, tau1, tgt_vy, tgt_vx, tgt_r, tgt_w, mass_flow1,  
+										A2, B2, T2, rT2, hT2, w_T2, s_ve2, tau2, start_mass2, mass_flow2, Thrust2,
+										A3, B3, T3, rT3, hT3, w_T3, s_ve3, tau3, start_mass3, mass_flow3, Thrust3,
+										dA1, dA2, dB1, dB2).
+
+			set A1 to peg_solved[0].
+			set B1 to peg_solved[1].
+			set T1_new to peg_solved[2].
+			set rT1 to peg_solved[3].
+			set hT1 to peg_solved[4].
+			set w_T1_new to peg_solved[5].
+
+			set A2 to peg_solved[6].
+			set B2 to peg_solved[7].
+			set T2_new to peg_solved[8].
+			set rT2 to peg_solved[9].
+			set hT2 to peg_solved[10].
+			set w_T2_new to peg_solved[11].
+
+			set A3 to peg_solved[12].
+			set B3 to peg_solved[13].
+			set T3_new to peg_solved[14].
+			set rT3 to peg_solved[15].
+			set hT3 to peg_solved[16].
+			set w_T3_new to peg_solved[17].
+
+			set dA1 to peg_solved[18].
+			set dA2 to peg_solved[19].
+			set dB1 to peg_solved[20].
+			set dB2 to peg_solved[21].
+
+			//Check for convergence
+			If Converged = 0{
+				If ff_Tol (T3, T3_new, 1){
+					Set Converged to 1.
+					Print "Closed Loop Guidanace Enabled" AT (0,4).
+				}else{
+					Print "Closed Loop Converging" AT (0,4).
+				}
+			//Print T3 AT (0,6).
+			//Print T3_new AT (0,7).
+			}
+
+			if T1 >0 {
+
+				set w_T1 to w_T1_new.
+				set w_T2 to w_T2_new.
+				set w_T3 to w_T3_new.
+				set T3 to T3_new.
+				set A to A1.
+				set B to B1.
+				Print "T1 PEG Loop" AT (0,5).
+			} 
+
+			if (T2> 0) and (T1 = 0){
+				set w_T2 to w_T2_new.
+				set w_T3 to w_T3_new.
+				set T3 to T3_new.
+				set A to A2.
+				set B to B2.
+				Print "T2 PEG Loop" AT (0,5).
+			}
+			if T3> 0 and (T2 = 0){
+
+				if(T3_new <= HSL) { // below this the solution starts to become very sensitive and A and B should not longer be re-calculated but fixed until insertion
+					Print "Terminal guidance enabled" AT (0,2). 
+					Set peg_step to 1000.
+					//Print tau_lock. //DEBUG
+					Set tau_lock to true.
+				} Else{
+					Print "T3 PEG Loop" AT (0,5).
+					set A to A3.
+					set B to B3.
+				}
+				Set T3 to T3_new.
+				set w_T3 to w_T3_new.
+
+			}			
+		}
+
+
+		//Print A. //DEBUG
+		//Print B. //DEBUG
+		//Print C. //DEBUG
+		//Print w. //DEBUG
+		//Print s_acc. //DEBUG
+		//Print peg_step. //DEBUG
+		If loop_break = true {
+			Break.// exit loop
+		}
+		set C to ((body:mu/(s_r^2)) - ((w^2)*s_r))/s_acc.	
+		set s_pitch to A + C. //sin pitch at current time.
+		set s_pitch to max(-0.707, min(s_pitch, 0.707)). // limit the pitch change to between -45 and 45 degress
+		Set s_pitch to arcsin(s_pitch). //covert into degress
+		//Use s-pitch only if converged 
+		if converged = 1{
+			LOCK STEERING TO heading(sv_intAzimith, s_pitch).
+		}Else{
+			LOCK STEERING TO heading(sv_intAzimith, int_pitch).
+		}
+		Print "S pitch: " + s_pitch AT (0,7).
+		//Print "T1:" + T1. //DEBUG
+		//Print "T2:" + T2. //DEBUG
+		//Print "T3:" + T3. //DEBUG
+		//Print "RT3: " + rT3. //DEBUG
+		//Print "HT3: " + hT3. //DEBUG
+		//Print (HSL - delta). //DEBUG
+		//Print tau_lock. //DEBUG
+	wait 0.1.
+	}//end of loop
+
 } // end of function
+	
+/////////////////////////////////////////////////////////////
+//Helper Functions - These are only used for internally by the file functions
+/////////////////////////////////////////////////////////////
+
+function hf_PEG {
+    parameter A1.
+    parameter B1.
+    parameter T1.
+	parameter rT1.
+	parameter hT1.
+	parameter w_T1. 
+	parameter s_ve1.
+	parameter tau1.
+	parameter tgt_vy. // orbit "target" vertical velocity
+	parameter tgt_vx. // orbit "target" horizontal velocity
+	parameter tgt_r. // orbit "target" radius
+	parameter tgt_w.
+	parameter mass_flow1 is 0.
+
+    parameter A2 is 0.
+    parameter B2 is 0.
+    parameter T2 is 0.
+	parameter rT2 is 0.
+	parameter hT2 is 0.
+	parameter w_T2 is 0. 
+	parameter s_ve2 is 0.
+	parameter tau2 is 1.
+	parameter start_mass2 is 0.
+	parameter mass_flow2 is 0.
+	parameter Thrust2 is 0.
+
+	parameter A3 is 0.
+    parameter B3 is 0.
+    parameter T3 is 0.
+	parameter rT3 is 0.
+	parameter hT3 is 0.
+	parameter w_T3 is 0. 
+	parameter s_ve3 is 0.
+	parameter tau3 is 1.
+	parameter start_mass3 is 0.
+	parameter mass_flow3 is 0.
+	parameter Thrust3 is 0.
+
+	parameter dA1 is 0.
+	parameter dA2 is 0.
+	parameter dB1 is 0.
+	parameter dB2 is 0.
+
+	// read current stage and position values
+
+	local s_vy is ship:verticalspeed.
+	local s_vx is sqrt(ship:velocity:orbit:sqrmagnitude - ship:verticalspeed^2).
+	local s_r is ship:orbit:body:distance.
+	local s_acc is ship:AVAILABLETHRUST/ship:mass. // current ship parameter
+	local w is s_vx /s_r.
+	//local w is sqrt((s_vx^2) + (s_vy^2)) / (s_r).
+	local h0 is vcrs(v(s_r, 0, 0), v(s_vy, s_vx, 0)):mag. //current angular momentum
+	Local tgt_h is vcrs(v(tgt_r, 0, 0), v(tgt_vy, tgt_vx, 0)):mag. //target angular momentum
+
+	local s_acc_2 is 0.
+	local s_acc_3 is 0.
+
+	local s_acc_end_1 is 0.
+	local s_acc_end_2 is 0.
+	local s_acc_end_3 is 0.
+
+	local rdotT2 is 0.
+	local rdotT3 is 0.
+	local A is 0.
+	local B is 0.
+
+
+	if T1 > 0{
+		Set A to A1.
+		Set B to B1.
+	}
+	if (T2 > 0) and (T1 = 0){
+		Set A to A2.
+		Set B to B2.
+		Set rT1 to s_r.
+	}
+	if (T2 = 0) and (T1 = 0){
+		Set A to A3.
+		Set B to B3.
+		Set rT2 to s_r.
+	}
+
+	/// determine bn and cn stages
+
+	local L1 is hf_bcn(s_ve1, tau1, T1).
+
+	local bb01 is L1[0].
+	local bb11 is L1[1].
+	local bb21 is L1[2].
+	local cc01 is L1[3].
+	local cc11 is L1[4].
+	local cc21 is L1[5].
+
+	local L2 is hf_bcn(s_ve2, tau2, T2).
+
+	local bb02 is L2[0].
+	local bb12 is L2[1].
+	local bb22 is L2[2].
+	local cc02 is L2[3].
+	local cc12 is L2[4].
+	local cc22 is L2[5].
+
+	local L3 is hf_bcn(s_ve3, tau3, T3).
+
+	local bb03 is L3[0].
+	local bb13 is L3[1].
+	local bb23 is L3[2].
+	local cc03 is L3[3].
+	local cc13 is L3[4].
+	local cc23 is L3[5].
+
+	// Print "Checks check:".
+	// Print "bb01: " + bb01.
+	// Print "bb11: " + bb11.
+	// Print "s_r: "+s_r.
+	// Print "s_vy: " + s_vy.
+	// Print "tgt_r: "+tgt_r.
+	// Print "T1: " + T1.
+	// Print "A1: " + A1.
+	// Print "B1: " + B1.
+	// Print "rT1: " + rT1.
+	// Print "dA1: " + dA1.
+	// Print "dB1: " + dB1.
+	// Print "T2: " + T2.
+	// Print "A2: " + A2.
+	// Print "B2: " + B2.
+	// Print "rT2: " + rT2.
+	// Print "dA2: " + dA2.
+	// Print "dB2: " + dB2.
+	// Print "T3: " + T3.
+	// Print "A3: " + A3.
+	// Print "B3: " + B3.
+	// Print "rT3: " + rT3.
+	// Print "Height: "+ (rT1 - body:radius).
+	// Print "(s_vy*T1)" + (s_vy*T1).
+	// Print "(cc01 * A1)" + (cc01 * A1).
+	// Print "(cc11*B1)" + (cc11*B1).
+	// Print "combined: " + ((s_vy*T1)+(cc01 * A1)+(cc11*B1)).
+
+
+	//get future stage parameters
+	//T3 parameters
+	set s_acc_3 to Thrust3/start_mass3.
+	set s_acc_end_3 to Thrust3/ (start_mass3 -((mass_flow3)*T3)).
+
+	//J= 4 l=3, k=2, i=1
+	set rdotT3 to s_vy.
+	set rdotT3 to rdotT3 + (bb03+bb02+bb01)*A.
+	set rdotT3 to rdotT3 + ( (bb13 + (bb03*(T2+T1))) + (bb12 + (bb02*T1)) + (bb11 + (bb01*0)) )*B.   //vertical speed at staging
+	set rdotT3 to rdotT3 + ((bb03*dA2) + (bb03*(T2)*dB1) + (bb13*dB2)) + ((bb02*dA1) + (bb02*T1*0) + (bb12*dB1)) + ((bb01*0) + (bb01*0*0) + (bb11*0)).
+	//Print "Calc rdotT3 check " + rdotT3.
+	set rdotT3 to tgt_vy.
+	
+	//J=4 l=3, k=2, i=1, m=0
+	set rT3 to s_r + (s_vy*(T1+T2+T3)). 
+	set rT3 to rT3 + ( (cc03 + (T3*(bb01+bb02))) + (cc02 + (T2*bb01)) + (cc01 + (T1*0)) )*A.
+	set rT3 to rT3 + ( cc13 + cc12 + cc11 + (cc03*T2 + bb12*T3 + bb02*T3*T1) + (cc03*T1) + (bb11*T3) + ((bb01*T3)*0) + (cc02*T1 + bb11*T2 + bb01*T2*0) + (cc01*0 + 0*T1 + 0*T1*0)  )*B.
+	set rT3 to rT3 + ((cc03*dA2) + (cc13*dB2) + (cc02*dA1) + (cc12*dB1)).
+	set rT3 to rT3 + (bb02*T3*dA1 + bb02*T1*T3*0 + bb12*T3*dB1 + cc03*T2*dB1).
+	set rT3 to rT3 + (bb01*T3*dA1) + (bb01*T1*T3*0) + (bb11*T3*dB1) + (cc03*T1*dB1).//l=3, k=1, i=1, m=0
+	//Print "Calc RT3 check " + rT3.
+	set rT3 to tgt_r.
+	
+	//Print "rdotT3: "+rdotT3.
+	//Print "rT3: "+ rT3.
+
+	//apply boundaries on results
+	//if rT3 > tgt_r{ Set rT3 to tgt_r.}
+	//if rT3 < rT2 {Set rT3 to rT2.}
+
+	Local L6 is hf_end_cond(w_T2, rT2, s_acc_3, w_T3, rT3, s_acc_end_3, T3, A3, B3). 
+	local ft_3 is L6[0].
+	local ftdot_3 is L6[1].
+	local ftdd_3 is L6[2].
+	//local dh_T3 to ((rT2 + rT3)/2)*( (ft_3*bb03) + (ftdot_3*bb13) + (ftdd_2*bb23) ).
+	//Set hT3 to dh_T3 + hT2.
+	local dh_T3 is tgt_h - hT2. //angular momentum to gain in final stage
+	//Set hT3 to dh_T3 + hT2.
+	Local hT3 is tgt_h.
+	//local v0_T3 is hT3/rT3.
+	local v0_T3 is tgt_vx.
+	//Print L6.
+	//print "v0_T3 " + v0_T3.
+	local rT3 is tgt_r.
+	//Print "rT3" + rT3.
+	//Set w_T3 to sqrt((v0_T3^2) - (rdotT3^2))/rT3.
+	Set w_T3 to tgt_w.
+
+	set mean_r to (rT3 + rT2)/2.
+	local dv_T3 is dh_T3/mean_r.
+	if (dv_T3 < 5) and (T1 > 0) {Set dv_T3 to 5.}
+	Set T3 to tau3*(1 - constant:e ^ (-dv_T3/s_ve3)).
+
+	if T3 <0 {Set T3 to 2.}
+	//Print "dv gain T2 to Orbit: " + dv_T3.
+
+	//T2 parameters
+	set s_acc_2 to Thrust2/start_mass2.
+	set s_acc_end_2 to Thrust2/ (start_mass2 -((mass_flow2)*T2)).
+
+	//J= 3 l=2, k=1, i=0
+	set rdotT2 to s_vy.
+	set rdotT2 to rdotT2 + (bb02+bb01)*A.
+	set rdotT2 to rdotT2 + ( (bb12 + (bb02*T1)) + (bb11 + (bb01*0)) )*B.   //vertical speed at staging
+	set rdotT2 to rdotT2 + ((bb02*dA1) + (bb02*T1*0) + (bb12*dB1)) + ((bb01*0) + (bb01*0*0) + (bb11*0)).
+	//Print "Calc rdotT2 check " + rdotT2.
+	
+	//J=3 l=2, k=1, i=0
+	set rT2 to s_r + (s_vy*(T1+T2)). 
+	set rT2 to rT2 + ( (cc02 + (T2*bb01)) + (cc01 + (T1*0)) )*A.
+	set rT2 to rT2 + ( cc12 + cc11 + (cc02*T1 + bb11*T2 + bb01*T2*0) + (cc01*0 + 0*T1 + 0*T1*0)  )*B.
+	set rT2 to rT2 + ( (cc02*dA1) + (cc12*dB1) + (cc01*0) + (cc11*0)  ).
+	set rT2 to rT2 + (bb01*T2*0 + bb01*0*T2*0 + bb11*T2*0 + cc02*T1*0).
+	//Print "Calc RT2 check " + rT2.
+
+	//apply boundaries on results
+	//if rT2 > tgt_r{ Set rT2 to tgt_r.}
+	//if rT2 < rT1 { Set rT2 to rT1.}
+
+	Local L5 is hf_end_cond(w_T1, rT1, s_acc_2, w_T2, rT2, s_acc_end_2, T2, A2, B2). 
+	local ft_2 is L5[0].
+	local ftdot_2 is L5[1].
+	local ftdd_2 is L5[2].
+	local dh_T2 to ((rT1 + rT2)/2)*( (ft_2*bb02) + (ftdot_2*bb12) + (ftdd_2*bb22) ).
+	Set hT2 to dh_T2 + hT1.
+	local v0_T2 is hT2/rT2.
+	//contraint on V0_T1 to less than remaining stage dv
+	//Print "v0_T2 (1): " + v0_T2.
+	// if V0_T2 > (bb02 + V0_T1){
+	// 	set V0_T2 to (bb02 + V0_T1).
+	// 	set hT2 to V0_T2*rT2.
+	// }
+	// if V0_T2 < (V0_T1){
+	// 	set V0_T2 to (V0_T1).
+	// 	set hT2 to V0_T2*rT2.
+	// }
+	//Print L5.
+	//print "v0_T2 " + v0_T2.
+	//print "rT2" + rT2.
+	Set w_T2 to sqrt((v0_T2^2) - (rdotT2^2))/rT2.
+
+	set mean_r to (rT2 + rT1)/2.
+	local dv_gain is dh_T2/mean_r.
+	//Print "dv gain to T1 to T2: " + dv_gain.
+
+	if T3 = 0{ // if only two stage to orbit
+		Set T2 to tau2*(1 - constant:e ^ (-dv_gain/s_ve2)).
+		//set T2 boundaries
+		if T2 <0 {Set T2 to 2.}
+	}
+
+	//T1 parameters
+	set s_acc_end_1 to ship:AVAILABLETHRUST/ (ship:mass - ((mass_flow1/1000)*T1)).// 1000 used here as mass returned in tonnes due to weight
+	//Print s_acc_end_1.
+
+	//J= 2 l=1, k=0, i=0
+	set rdotT1 to s_vy.
+	set rdotT1 to rdotT1 + (bb01)*A.
+	set rdotT1 to rdotT1 + ( (bb11 + (bb01*0)) )*B.   //vertical speed at staging
+	set rdotT1 to rdotT1 + ((bb01*0) + (bb01*0*0) + (bb11*0)).
+	//Print "Calc rdotT1 check " + rdotT1.
+	
+	//J= 2 l=1, k=0, i=0
+	set rT1 to s_r + (s_vy*(T1)). 
+	set rT1 to rT1 + ( (cc01 + (T1*0)) )*A.
+	set rT1 to rT1 + ( cc11 + (cc01*0 + 0*T1 + 0*T1*0)  )*B.
+	set rT1 to rT1 + ( (cc01*0) + (cc11*0) ).
+	// Print "Calc RT1 check " + rT1.
+	// Print "Change rDot3: " + (bb03*A3 + bb13*B3).
+	// Print "Change r3: " + (rdotT2*T3) + cc03*A3 + cc12*B3.
+	// Print "Change rDot2: " + (bb02*A2 + bb12*B2).
+	// Print "Change r2: " + (rdotT1*T2) + cc02*A2 + cc12*B2.
+	// Print "Change rDot1: " + (bb01*A1 + bb11*B1).
+	// Print "Change r1: " + (s_vy*T1) + cc01*A1 + cc11*B1.
+
+	//apply boundaries on results
+	//if rT1 > tgt_r {Set rT1 to tgt_r-30000.}
+	//if rT1 < s_r {Set rT1 to s_r.}
+
+	local L4 is hf_end_cond(w, s_r, s_acc, w_T1, rT1, s_acc_end_1, T1, A1, B1). 
+	local ft_1 is L4[0].
+	local ftdot_1 is L4[1].
+	local ftdd_1 is L4[2].
+	local dh_T1 to ((s_r + rT1)/2)*( (ft_1*bb01) + (ftdot_1*bb11) + (ftdd_1*bb21) ).
+	Set hT1 to dh_T1 + h0.
+	local v0_T1 is hT1/rT1.
+	//contraint on V0_T1 to less than remaining stage dv
+	//Print "v0_T1 (1): " + v0_T1.
+	//Print dh_T1 /rT1.
+	// if V0_T1 > (bb01 + sqrt(s_vx^2 + s_vy^2)){
+	// 	set V0_T1 to (bb01 + sqrt(s_vx^2 + s_vy^2)).
+	// 	set hT1 to V0_T1*rT1.
+	// }
+	//Print tau1. 
+	//Print "T1: " + T1.
+	//Print L1.
+	//Print L4.
+	//Print "v0_T1: " + v0_T1.
+	//Print "rT1: " + rT1.
+	Set w_T1 to sqrt((v0_T1^2) - (rdotT1^2))/rT1.
+
+	set mean_r to (s_r + rT1)/2.
+	local dv_gain is dh_T1/mean_r.
+	//Print "dv gain to T1: " + dv_gain.
+
+	if T2 = 0 { // if only single stage to orbit
+		Set T1 to tau1*(1 - constant:e ^ (-dv_gain/s_ve1)).
+	}
+
+	//Guidance staging discontinuities
+
+	If (T2>0) and (T1>0){
+
+		set dA1 to ( (body:mu/(rT1^2)) - ((w_T1^2)*rT1) ).
+		set dA1 to dA1 * ( (1/s_acc_end_1) - (1/s_acc_2) ).
+
+		set dB1 to - ( (body:mu/(rT1^2)) - ((w_T1^2)*rT1) ) * ( (1/s_ve1) - (1/s_ve2)  ). 
+		set dB1 to dB1 + ( ( (3*(w_T1^2)) - ((2*body:mu)/(rT1^3)) ) *rdotT1* ( (1/s_acc_end_1) - (1/s_acc_2) )  ).
+
+		/// Determine A2 and B2
+
+		set A2 to A1 + (dA1 + (B1*T1)). //Aj = A1 + sum dA(l) + B1*T(l) + T(l)*sum(dB(l)) (from l=1 to j-1)
+		set B2 to B1 + dB1. //Bj = B1 + sum dB(l) (from l=1 to j-1)
+		
+		If T3>0{
+
+			set dA2 to ( (body:mu/(rT2^2)) - ((w_T2^2)*rT2) ).
+			set dA2 to dA2 * ( (1/s_acc_end_2) - (1/s_acc_3) ).
+
+			set dB2 to - ( (body:mu/(rT2^2)) - ((w_T2^2)*rT2) ) * ( (1/s_ve2) - (1/s_ve3)  ). 
+			set dB2 to dB2 + ( ( (3*(w_T2^2)) - ((2*body:mu)/(rT2^3)) ) *rdotT2* ( (1/s_acc_end_2) - (1/s_acc_3) )  ).
+
+			/// Determine A3 and B3
+
+			set A3 to A1 + (dA1 + (B1*T1)) + (dA2 + (B1*T2)) + (T2*dB1). //Aj = A1 + sum dA(l) + B1*T(l) + T(l)*sum(dB(l)) (from l=1 to j-1)
+			set B3 to B1 + dB1 + dB2. //Bj = B1 + sum dB(l) (from l=1 to j-1)
+		
+		}
+	}
+
+	If (T2>0) and (T1=0){
+		Set dA1 to 0.
+		Set dB1 to 0.
+
+		set dA2 to ( (body:mu/(rT2^2)) - ((w_T2^2)*rT2) ).
+		set dA2 to dA2 * ( (1/s_acc_end_2) - (1/s_acc_3) ).
+
+		set dB2 to - ( (body:mu/(rT2^2)) - ((w_T2^2)*rT2) ) * ( (1/s_ve2) - (1/s_ve3)  ). 
+		set dB2 to dB2 + ( ( (3*(w_T2^2)) - ((2*body:mu)/(rT2^3)) ) *rdotT2* ( (1/s_acc_end_2) - (1/s_acc) )  ).
+
+		/// Determine A3 and B3
+
+		set A3 to A2 + (dA2 + (B2*T2)). 
+		set B3 to B3 + dB2.
+		
+	}
+
+	If (T2=0) and (T1=0){
+		Set dA1 to 0.
+		Set dB1 to 0.
+
+		Set dA2 to 0.
+		Set dB2 to 0.
+	}
+
+	//set up matricies
+	//for rDot A/////
+	local mA11 is bb01 + bb02 + bb03. 
+
+	//for rDot B////
+	//l=3, k=2
+	Local mA12 is bb13 + (bb03*(T1+T2)). 
+	//l=2, k=1 
+	set mA12 to mA12 + bb12 + (bb02*T1).
+	//l=1
+	set mA12 to mA12 + bb11.
+
+	//for r A/////
+	//l=3, k=2,1
+	local mA21 is cc03 + ((bb02+bb01)*T3). 
+	//l=2, k=1 
+	set mA21 to mA21 + cc02 + (bb01*T2).
+	//l=1, k=0 
+	set mA21 to mA21 + cc01.
+
+	//for r B/////
+	//l=3, k=1 i=1 
+	local mA22 is cc13 + (cc03*T2) + (bb12*T3) + ((bb02*T3)*T1).
+	// sub l=3, k=1 i=0 
+		set mA22 to mA22 + (cc03*T1) + (bb11*T3) + ((bb01*T3)*0).
+	//l=2, k=1, i=0 
+	set mA22 to mA22 + cc12 + (cc02*T1) + (bb11*T2) +((bb01*T2)*0).
+	// sub l=2, k=0 i=0 
+		set mA22 to mA22 + (cc02*0) + (0*T2) + ((0*T2)*0).
+	//l=1, k=0, i=0 
+	set mA22 to mA22 + cc11. 
+
+
+	//for rdot final/////
+	local mC1 is tgt_vy - s_vy. 
+	//l=3, k=2 i=1
+	set mC1 to mC1 - (bb03*dA2) - (bb03*(T2)*dB1) - (bb13*dB2). 
+	//l=2, k=1, i=0
+	set mC1 to mC1 - (bb02*dA1) - (bb02*T1*0) - (bb12*dB1). 
+	//l=1, k=0, i=0
+	set mC1 to mC1 - (bb01*0) - (bb01*0*0) - (bb11*0). 
 
 	
-///////////////////////////////////////////////////////////////////////////////////
-//Helper function for the files functions
-/////////////////////////////////////////////////////////////////////////////////////
-// Credits: Same as ff_InsertionPEG
-function hf_peg_cycle {
-    parameter A.
-    parameter B.
-    parameter T.
-    parameter delta.
-	parameter tau.
-	parameter tgt_vy.
-	parameter tgt_vx.
-	parameter tgt_r.
-	parameter s_vy.
-	parameter s_vx.
-	parameter s_r.
-	parameter s_acc.
-    
-	local s_ve is ff_Vel_Exhaust().
-    
-	///if first time through get inital A and B values
-    if A = 0 and B = 0 {
-        local ab is hf_peg_solve(T, tau, tgt_vy, tgt_r, s_vy, s_r).
-        set A to ab[0].
-        set B to ab[1].
-    }
-    Print "s_r: " + s_r.
-    local T_dash is T - delta.
-	local A_dash is A - delta*B.
-	local B_dash is B.
-    Print "delta: " + delta.
-    local h0 is vcrs(v(s_r, 0, 0), v(s_vy, s_vx, 0)):mag. //current angular momentum
-	Print "h0: " + h0.
-    local dh is tgt_h - h0. //angular momentum to gain
-    Print "dh: " + dh.
-	
-    Local C is (body:mu/s_r^2 - (s_vx^2/s_r))/s_acc. //portion of vehicle acceleration used to counteract gravity
-	Print "C: " + C.
-    local fr is A_dash + C. //sin pitch at current time	
-    local CT is ((body:mu/tgt_r^2) - (tgt_vx^2/tgt_r)) / (s_acc / (1-(T_dash/tau))). //Gravity and centrifugal force term at cutoff
-	Print (body:mu/tgt_r^2).
-	Print (tgt_vx^2/tgt_r).
-    Print ((body:mu/tgt_r^2) - (tgt_vx^2/tgt_r)).
-	Print (s_acc / (1-(T_dash/tau))).
-	Print "CT: " + CT.
-	Print "body:mu " + body:mu.
-	Print "tgt_r" + tgt_r.
-	Print "tgt_vx" + tgt_vx.
-	Print "T dash" + T_dash.
-	Print "tau " + tau.
-	
-    local frT is A_dash + B_dash*T_dash + CT. //sin pitch at burnout
-    local frdot is (frT-fr)/T_dash. //approximate rate of sin pitch
-	Print "A_dash: " + A_dash.
-	Print "B_dash: " + B_dash.
-	Print "frt: " + frT.
-	Print "fr: " + fr.
-    Print "frdot: " + frdot.
-    local ft is 1 - (fr^2)/2. //cos pitch
-    local ftdot is -fr*frdot. //cos pitch speed
-    local ftdd is -(frdot^2)/2. //cos pitch acceleration
-	Print "ft: " + ft.
-	Print "ftdot: " + ftdot.
-    Print "ftdd: " + ftdd.
-    local mean_r is (tgt_r + s_r)/2.
-	Print "mean_r: " + mean_r.
-    local dv is (dh/mean_r) + ((s_ve*T) * (ftdot+(ftdd*tau))) + ((ftdd*s_ve*(T^2))/2). //note this is from nasa manual equation 36
-	//local dv is (dh/mean_r) + (s_ve*T) + (ftdot+(ftdd*tau)) + ((ftdd*s_ve*(T^2))/2).// note this is from wiki
-	Print T.
-	Print (dh/mean_r).
-	Print (s_ve*T_dash).
-	Print (ftdot+(ftdd*tau)).
-	Print ((ftdd*s_ve*(T^2))/2).
-	Print "fDV: " + dv.
-	Print (ft + ftdot*tau + ftdd*(tau^2)).
-    set dv to abs(dv / (ft + (ftdot*tau) + (ftdd*(tau^2)))). // big equation from wiki near end of estimated
-	Print "DV: " + dv.
-    local T_plus is tau*(1 - constant:e ^ (-dv/s_ve)). // estimated updated burnout time
-    Print "T_plus" + T_plus.
-	if abs(t_plus-tau)/tau < 0.001{ //if the result is too close to a full burnout try again until the craft is in a better position to converge
-		Set t_plus to T_dash*0.95. 
-		Print "new T-Plus" + T_plus.
+	//for r final/////
+	local mC2 is tgt_r - s_r - (s_vy*(T1+T2+T3)).
+	//l=3, k=2, i=1, m=0
+	set mC2 to mC2 - (cc03*dA2) - (cc13*dB2) - (bb02*T3*dA1) - (bb02*T1*T3*0) - (bb12*T3*dB1) - (cc03*T2*dB1).
+	// Sub l=3, k=1, i=1, m=0
+		set mC2 to mC2 - (bb01*T3*dA1) - (bb01*T1*T3*0) - (bb11*T3*dB1) - (cc03*T1*dB1).
+	// Sub l=3, k=2, i=0, m=0
+		set mC2 to mC2 - (bb02*T3*0) - (bb02*0*T3*0) - (bb12*T3*0) - (cc03*T2*0).
+	//l=2, k=1, i=0, m=0
+	set mC2 to mC2 - (cc02*dA1) - (cc12*dB1) - (bb01 *T2 *0) - (bb01*0*T2*0) - (bb11*T2*0) - (cc02*T1*0). 
+	// Sub l=2, k=0, i=0, m=0
+		set mC2 to mC2 - (0*T2*0) - (0*0*T2*0) - (0*T2*0) - (cc02*0*0).
+	//l=1, k=0, i=0, m=0
+	set mC2 to mC2 - (cc01*0) - (cc11*0) - 0. 
+
+	local peg is hf_peg_solve(mA11, mA12, mA21, mA22, mC1, mC2).
+
+	if T1 > 0{
+		Set A1 to peg[0].
+		Set B1 to peg[1].
+		//Print "A1 peg"+ A1. 
+		//Print "B1 peg" + B1.
 	}
-    if(T_plus >= 2) { // this effectively when the solution starts to become very sensitive and A and B should not longer be re-calculated
-        local ab is hf_peg_solve(T_plus, tau, tgt_vy, tgt_r, s_vy, s_r).
-        set A to ab[0].
-        set B to ab[1].
-    } else {
-        Print ("terminal guidance enabled").
-        set A to A_dash.
-        set B to B_dash.
-    }
-	wait 0.01.
-    return list(A, B, C, T_plus, CT, dv).
+	if (T2 > 0) and (T1 = 0){
+		Set A2 to peg[0].
+		Set B2 to peg[1].
+		//Print "A2 peg"+ A2. 
+		//Print "B2 peg" + B2.
+	}
+	if (T2 = 0) and (T1 = 0){
+		Set A3 to peg[0].
+		Set B3 to peg[1].
+		//Print "A3 peg"+ A3. 
+		//Print "B3 peg" + B3.
+	}
+	// Print "Accel " + s_acc.
+	// Print s_acc_2.
+	// Print s_acc_3.
+	// Print s_acc_end_1.
+	// Print s_acc_end_2.
+	// Print s_acc_end_3.
+
+	Return list(A1, B1,	T1, rT1, hT1, w_T1, A2, B2, T2, rT2, hT2, w_T2, A3, B3, T3, rT3, hT3, w_T3, dA1, dA2, dB1, dB2). 
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
-// Credits: Same as ff_InsertionPEG
+function hf_bcn{
+	parameter s_ve.
+	parameter tau.
+	parameter T.
 
+	//Print s_ve. //DEBUG
+	//Print tau. //DEBUG
+	//Print T. //DEBUG
+	if T > tau { //prevent an error
+		set tau to (T-0.00000001).
+	}
+
+	local bb0 is -s_ve*(LN(1-(T/tau))).
+	//J1
+	local bb1 is (bb0 * tau) - (s_ve*T).
+	//P1
+	local bb2 is (bb1 * tau) - ((s_ve*(T^2))/2).
+	//S1
+	local cc0 is (bb0*T)-bb1.
+	//Q1
+	local cc1 is (cc0*tau) - ((s_ve*(T^2))/2).
+	//U1
+	local cc2 is (cc1*tau) - ((s_ve*(T^3))/6).
+
+	return list(bb0, bb1, bb2, cc0, cc1, cc2).
+}
+Function hf_end_cond{
+	parameter start_w.
+	parameter start_r.
+	parameter start_acc.
+	parameter end_w.
+	parameter end_r.
+	parameter end_acc.
+	parameter T_time.
+	parameter A.
+	parameter B. 
+
+	if T_Time = 0{
+		Set T_Time to 1. // prevent divide by zero error.
+	}
+
+	//Current pitch guidance for horizontal state
+	Set C to ((body:mu/(start_r^2)) - ((start_w^2)*start_r))/start_acc. //start portion of vehicle acceleration used to counteract gravity
+	local fr is A + C. //sin pitch at start
+	local C_end is (body:mu/(end_r^2)) - ((end_w^2)*end_r). //Gravity and centrifugal force term at cutoff
+	Set C_end to C_end /end_acc. 
+	Set frT to A + (B*T_time) + C_end. //sin pitch at burnout. 
+	local frdot is (frT-fr)/T_time. //approximate rate of sin pitch
+	local ft is 1 - (frT^2)/2. //cos pitch
+	local ftdot is -fr*frdot. //cos pitch speed
+	local ftdd is -(frdot^2)/2. //cos pitch acceleration
+	
+	return list (ft, ftdot, ftdd). 
+}
+///////////////////////////////////////////////////////////////////////////////////
 // Estimate, returns A and B coefficient for guidance
 function hf_peg_solve {
-    parameter T.//Estimated time until burnout
-    parameter tau. // tau = ve/a which is the time to burn the vehicle completely if it were all propellant
-	parameter tgt_vy.
-	parameter tgt_r.
-	parameter s_vy.
-	parameter s_r.
-	
-	local s_ve is ff_Vel_Exhaust().
+    parameter mA11.
+	parameter mA12. 
+	parameter mA21. 
+	parameter mA22. 
+	parameter mC1. 
+	parameter mC2.
 
-    local b0 is -s_ve * ln(1 - (T/tau)). //Wiki eq 7a
-    local b1 is (b0*tau) - (s_ve*T). //Wiki eq 7b
-    local c0 is b0*T - b1. //Wiki eq 7c
-    local c1 is (c0*tau) - (s_ve * T^2)/2. //Wiki eq 7d
-    local mb0 is tgt_vy - s_vy.  //Wiki Major loop algortthm MB Matrix top
-    local mb1 is (tgt_r - s_r) - s_vy*T. //Wiki Major loop algortthm MB Matrix bottom
-    local d is (b0*c1 - b1*c0). // //Wiki Major loop algortthm intermediate stage to solve for Mx from Ma and Mb
-    
-    local B is (mb1/c0 - mb0/b0) / (c1/c0 - b1/b0). 
-	local A is (mb0 - b1*B) / b0.
-	Print "Peg Solve".
-    Print "s_ve " + s_ve.
-	Print "T " + T.
-	Print "tau " + tau.
-	Print "A " + A.
-	Print "B " + B.
+	//solve matrix
+	local d is 1/((mA11*mA22) - (mA12*mA21)). // inverse coefficent
+	//inverse matrix
+	local dmA11 is d*mA22.
+	local dmA12 is d*-1*mA12.
+	local dmA21 is d*-1*mA21.
+	local dmA22 is d*mA11.
+
+	//Multiple inverse matrix by result matrix
+	local A is dmA11*mC1 + dmA12*mC2.
+	local B is dmA21*mC1 + dmA22*mC2.
+
+	// //solve matrix
+	// local d is ((mA11*mA22) - (mA12*mA21)). // inverse coefficent
+
+	// //Multiple inverse matrix by result matrix
+	// local A is (mA22*mC1 - mA12*mC2)/d.
+	// local B is (mA11*mC2 - mA21*mC1)/d.
+
+
     return list(A, B).
 }
 

@@ -4,31 +4,58 @@
 ///////////////////////////////////////////////////////////////////////////////////
 ///// List of functions that can be called externally
 ///////////////////////////////////////////////////////////////////////////////////
+		// ff_SpinStab,
 		// ff_FAIRING,
 		// ff_panels,
 		// ff_Tol,
 		// ff_COMMS,
 		// ff_R_chutes,
 		// ff_partslist,
+		// ff_Gravity,
+		// ff_mAngle,
+		// ff_Avionics_off,
+		// ff_Avionics_on,
+		// hf_360AngDiff,
+		// hf_180AngDiff,
+		// ff_clearLine.
 
-		// "Gravity",ff_Gravity@,
-		// "R_chutes_seq", ff_R_chutes_seq@,
-		// "collect_science", ff_collect_science@
 /////////////////////////////////////////////////////////////////////////////////////	
 //File Functions	
 /////////////////////////////////////////////////////////////////////////////////////	
-	
+
+
+
+Function ff_SpinStab{
+	Parameter intAzimith is 90, pitchdown is 0, waiting is 0.
+	LOCK STEERING TO HEADING(intAzimith, pitchdown).
+	Print "Spin Stabilisation starting".
+	// unlock steering.
+	// SAS on.
+	// wait 0.25.
+	Wait waiting.
+	set ship:control:roll to 1.
+}
+
+/////////////////////////////////////////////////////////////////////////////////////
+
 FUNCTION ff_FAIRING {
 	PARAMETER stagewait IS 0.1.
 
 	IF SHIP:Q < 0.005 {
 		FOR module IN SHIP:MODULESNAMED("ProceduralFairingDecoupler") {
-			if module:HASEVENT("jettison"){
-				module:DOEVENT("jettison").
+			if module:HASEVENT("Jettison Fairing"){
+				module:DOEVENT("Jettison Fairing").
 				PRINT "Jettisoning Fairings".
 				WAIT stageWait.
 			}
-		}.
+		}
+		FOR module IN SHIP:MODULESNAMED("ModuleProceduralFairing") { // Stock and KW Fairings
+			if module:HASEVENT("deploy") {
+				module:DOEVENT("deploy").
+				PRINT "Jettisoning Fairings".
+				WAIT stageWait.
+			}
+		}
 	}
 } // End of Function
 
@@ -97,13 +124,13 @@ function ff_partslist{
 	Parameter name is "".
 	Global RSS_partlist is list().
 	Global partlist is List().
-	LIST Parts IN partList. 
+	//LIST Parts IN partList. 
 	FOR Part IN partList {
 		IF Part:tag = name { 
 			RSS_partlist:add(Part).
 		}
 	}
-	Print "Parts: " + RSS_partlist.
+	//Print "Parts: " + RSS_partlist. //DEBUG
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -222,4 +249,45 @@ PARAMETER a.
   
 }
 
+Function ff_Avionics_off{
+	Local P is SHIP:PARTSNAMED(core:part:Name)[0].
+	Local M is P:GETMODULE("ModuleProceduralAvionics").
+	If M:HasEVENT("Shutdown Avionics"){
+		M:DOEVENT("Shutdown Avionics").
+	}
+}
 
+Function ff_Avionics_on{
+	Local P is SHIP:PARTSNAMED(core:part:Name)[0].
+	Local M is P:GETMODULE("ModuleProceduralAvionics").
+	If M:HasEVENT("Activate Avionics"){
+		M:DOEVENT("Activate Avionics").
+	}
+}
+
+Function hf_360AngDiff{
+	Parameter a, b.
+	return 180 - abs(abs(a-b)-180). 
+}
+Function hf_180AngDiff{
+	Parameter a, b.
+	return 90 - abs(abs(a-b)-90). 
+}
+
+function ff_clearLine {
+	parameter line.
+	local i is 0.
+	local s is "".
+	until i = terminal:width {
+		set s to " " + s.
+		set i to i + 1.
+	}
+	print s at (0,line).
+}
+
+Function ff_Alarm{
+	Parameter starttime, offset is 180.
+	If ADDONS:Available("KAC") {		  // if KAC installed	  
+		Set ALM to ADDALARM ("Maneuver", starttime - offset, SHIP:NAME ,"").// creates a KAC alarm 3 mins prior to the manevour node
+	}
+}

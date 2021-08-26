@@ -7,13 +7,11 @@
 ///// List of functions that can be called externally
 ///////////////////////////////////////////////////////////////////////////////////
 
-    // local Hill_Climb is lex(
-		// "freeze", ff_freeze@,
-		// "seek", ff_seek@,
-		// "seek_low" , ff_seek_low@,
-		// "seek_verylow" , ff_seek_verylow@,
-		// "optimize", ff_optimize@
-    // ).
+		// "ff_freeze@,
+		// ff_seek@,
+		// ff_seek_low@,
+		// "ff_seek_verylow@,
+		// ff_optimize@
 
 ////////////////////////////////////////////////////////////////
 //File Functions

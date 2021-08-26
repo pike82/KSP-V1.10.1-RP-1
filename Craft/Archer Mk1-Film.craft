@@ -1,5 +1,5 @@
 ship = Archer Mk1-Film
-version = 1.10.1
+version = 1.8.1
 description = 
 type = VAB
 size = 11.0063,21.3152084,7.80682373
@@ -12,11 +12,12 @@ OverrideDefault = False,False,False,False
 OverrideActionControl = 0,0,0,0
 OverrideAxisControl = 0,0,0,0
 OverrideGroupNames = ,,,
+upgraded = ProceduralParts 2.1 Bezier Cone Upgrader // Updates ProceduralParts Bezier Shapes to Custom Settings
 PART
 {
 	part = proceduralAvionics_4293123806
 	partName = Part
-	persistentId = 1742502585
+	persistentId = 2496959177
 	pos = 0.100227281,18.8125954,-1.96197629
 	attPos = 0,-1.6415863,0
 	attPos0 = 0.100227281,18.8125954,-1.96197629
@@ -142,11 +143,12 @@ PART
 	{
 		name = ProceduralShapeBezierCone
 		isEnabled = False
-		selectedShape = Round #1
+		selectedShape = Round1
 		topDiameter = 0.800000012
 		bottomDiameter = 1
 		length = 0.5
 		stagingEnabled = True
+		shapePoints = 0.400000006,0.00100000005,1,0.600000024
 		EVENTS
 		{
 		}
@@ -1157,7 +1159,7 @@ PART
 		baseModuleMass = 0
 		additionalCost = 0
 		MaxPartId = 100
-		RequiredPower = 0.00249999994
+		RequiredPower = 0.00999999978
 		stagingEnabled = True
 		activated = True
 		EVENTS
@@ -2044,6 +2046,7 @@ PART
 		}
 		UPGRADESAPPLIED
 		{
+			upgrade = commsTL1
 		}
 	}
 	MODULE
@@ -2114,7 +2117,7 @@ PART
 {
 	part = proceduralNoseCone_4292483012
 	partName = Part
-	persistentId = 1511727838
+	persistentId = 1789803441
 	pos = 0.100227281,19.5625954,-1.96197629
 	attPos = 0,0,0
 	attPos0 = 0,0.75,0
@@ -2203,11 +2206,12 @@ PART
 	{
 		name = ProceduralShapeBezierCone
 		isEnabled = True
-		selectedShape = Peaked #1
+		selectedShape = Peaked1
 		topDiameter = 0
 		bottomDiameter = 0.300000012
 		length = 1.20000005
 		stagingEnabled = True
+		shapePoints = 0.400000006,0.200000003,0.800000012,0.600000024
 		EVENTS
 		{
 		}
@@ -3235,7 +3239,7 @@ PART
 {
 	part = proceduralAvionics_4292985656
 	partName = Part
-	persistentId = 961061092
+	persistentId = 1746410742
 	pos = 0.100227281,16.0353756,-1.96197629
 	attPos = 0,1.14963436,0
 	attPos0 = 0,-1.52618027,0
@@ -3360,11 +3364,12 @@ PART
 	{
 		name = ProceduralShapeBezierCone
 		isEnabled = False
-		selectedShape = Round #1
+		selectedShape = Round1
 		topDiameter = 0.800000012
 		bottomDiameter = 1
 		length = 0.5
 		stagingEnabled = True
+		shapePoints = 0.400000006,0.00100000005,1,0.600000024
 		EVENTS
 		{
 		}
@@ -3792,7 +3797,7 @@ PART
 		baseModuleMass = 0
 		additionalCost = 0
 		MaxPartId = 100
-		RequiredPower = 0.00249999994
+		RequiredPower = 0.00999999978
 		stagingEnabled = True
 		activated = True
 		EVENTS
@@ -4679,6 +4684,7 @@ PART
 		}
 		UPGRADESAPPLIED
 		{
+			upgrade = commsTL1
 		}
 	}
 	MODULE
@@ -4749,7 +4755,7 @@ PART
 {
 	part = ROT-GenericTank-Separate_4292923730
 	partName = Part
-	persistentId = 2709271873
+	persistentId = 1582910858
 	pos = 0.100227281,10.4268742,-1.96197629
 	attPos = 0,0,0
 	attPos0 = 0,-5.4000001,0
@@ -5135,7 +5141,7 @@ PART
 {
 	part = ROE-RD100_4292940484
 	partName = Part
-	persistentId = 806634928
+	persistentId = 286999385
 	pos = 0.100227281,5.57688332,-1.96197629
 	attPos = 0,2.25429726,0
 	attPos0 = 0,-7.10429859,0
@@ -5477,9 +5483,9 @@ PART
 		isEnabled = True
 		operatingTime = 0
 		lastMET = 0
-		currentFlightData = 2604.87012
-		initialFlightData = 2604.87012
-		missionStartTime = 60588158.400473014
+		currentFlightData = 5735.63916
+		initialFlightData = 5735.63916
+		missionStartTime = 123703268.32404962
 		activeConfig = 
 		stagingEnabled = True
 		EVENTS
@@ -5665,7 +5671,7 @@ PART
 {
 	part = AM.MLP.MilkstoolMini2S_4292451860
 	partName = Part
-	persistentId = 2215829035
+	persistentId = 2109060232
 	pos = 0.100227281,0.376882553,-1.96197629
 	attPos = 0,0.618103027,0
 	attPos0 = 0,-5.81809998,0
@@ -5909,7 +5915,7 @@ PART
 {
 	part = AM.MLP.GeneralHold1_4292416464
 	partName = Part
-	persistentId = 2084080979
+	persistentId = 3166893619
 	pos = 0.179178163,5.37688637,-0.367753386
 	attPos = 0.078950882,-0.0505714417,-0.175858736
 	attPos0 = 0,5.0505724,1.77008164
@@ -6202,7 +6208,7 @@ PART
 {
 	part = AM.MLP.GeneralHold1_4292393964
 	partName = Part
-	persistentId = 2792861878
+	persistentId = 4007151928
 	pos = 1.44138932,5.37688637,-2.827461
 	attPos = -0.191773534,-0.0505714417,0.019556284
 	attPos0 = 1.53293562,5.0505724,-0.885040998
@@ -6495,7 +6501,7 @@ PART
 {
 	part = AM.MLP.GeneralHold1_4292393438
 	partName = Part
-	persistentId = 3338901096
+	persistentId = 199829933
 	pos = -1.31988549,5.37688637,-2.69071412
 	attPos = 0.112823248,-0.0505714417,0.15630281
 	attPos0 = -1.5329361,5.0505724,-0.88504076
@@ -6788,7 +6794,7 @@ PART
 {
 	part = AM.MLP.SmallLaunchStandRect_4291809318
 	partName = Part
-	persistentId = 3057578478
+	persistentId = 1962059831
 	pos = 0.100227281,-1.23311806,-1.96197629
 	attPos = 0,0,0
 	attPos0 = 0,-1.61000061,0
@@ -6799,12 +6805,12 @@ PART
 	symMethod = Radial
 	autostrutMode = Off
 	rigidAttachment = False
-	istg = 2
+	istg = 1
 	resPri = 0
 	dstg = 2
-	sidx = 2
-	sqor = 2
-	sepI = 2
+	sidx = 1
+	sqor = 1
+	sepI = 1
 	attm = 0
 	sameVesselCollision = False
 	modCost = 0
@@ -7234,7 +7240,7 @@ PART
 {
 	part = AM.MLP.AtlasUmbilicalArmCentaur1_4291801734
 	partName = Part
-	persistentId = 4073177821
+	persistentId = 4172471555
 	pos = 7.34522724,0.741794586,-1.96197629
 	attPos = 0,0,0
 	attPos0 = 7.24499989,1.97490883,0
@@ -7248,9 +7254,9 @@ PART
 	istg = 2
 	resPri = 0
 	dstg = 2
-	sidx = 3
+	sidx = 2
 	sqor = 2
-	sepI = 2
+	sepI = 1
 	attm = 0
 	sameVesselCollision = False
 	modCost = 0
@@ -7478,7 +7484,7 @@ PART
 {
 	part = RO-B9ProcWing-Early_4292626100
 	partName = Part
-	persistentId = 1674558911
+	persistentId = 319022860
 	pos = 0.100227281,6.21626663,-2.50101137
 	attPos = 0.0381906033,0.0586872101,0.0551114231
 	attPos0 = 0,-4.21060658,-0.539035082
@@ -7702,7 +7708,7 @@ PART
 {
 	part = RO-B9ProcWing-Early_4292621890
 	partName = Part
-	persistentId = 3215395842
+	persistentId = 1556882788
 	pos = -0.366590679,6.21626663,-1.69245863
 	attPos = 0.0381906033,0.0586872101,0.0551114231
 	attPos0 = -0.466818094,-4.21060658,0.269517601
@@ -7926,7 +7932,7 @@ PART
 {
 	part = RO-B9ProcWing-Early_4292621756
 	partName = Part
-	persistentId = 1597228357
+	persistentId = 720133340
 	pos = 0.567045391,6.21626663,-1.69245887
 	attPos = 0.0381906033,0.0586872101,0.0551114231
 	attPos0 = 0.466818094,-4.21060658,0.269517541
@@ -8150,7 +8156,7 @@ PART
 {
 	part = conformaldecals-flag_4292884118
 	partName = Part
-	persistentId = 1772985697
+	persistentId = 1163742684
 	pos = 0.829866827,13.4345016,-1.96197605
 	attPos = 0,0,0
 	attPos0 = 0.72963953,3.00762749,2.38418579E-07
@@ -8302,7 +8308,7 @@ PART
 {
 	part = conformaldecals-flag_4292882736
 	partName = Part
-	persistentId = 169942159
+	persistentId = 603721341
 	pos = -0.629412353,13.4345016,-1.96197653
 	attPos = 0,0,0
 	attPos0 = -0.729639649,3.00762749,-2.38418579E-07

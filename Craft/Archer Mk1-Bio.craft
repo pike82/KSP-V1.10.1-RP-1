@@ -1157,7 +1157,7 @@ PART
 		baseModuleMass = 0
 		additionalCost = 0
 		MaxPartId = 100
-		RequiredPower = 0.00249999994
+		RequiredPower = 0.00999999978
 		stagingEnabled = True
 		activated = True
 		EVENTS
@@ -2044,6 +2044,7 @@ PART
 		}
 		UPGRADESAPPLIED
 		{
+			upgrade = commsTL1
 		}
 	}
 	MODULE
@@ -4468,7 +4469,7 @@ PART
 		baseModuleMass = 0
 		additionalCost = 0
 		MaxPartId = 100
-		RequiredPower = 0.00249999994
+		RequiredPower = 0.00999999978
 		stagingEnabled = True
 		activated = True
 		EVENTS
@@ -5355,6 +5356,7 @@ PART
 		}
 		UPGRADESAPPLIED
 		{
+			upgrade = commsTL1
 		}
 	}
 	MODULE
@@ -6153,9 +6155,9 @@ PART
 		isEnabled = True
 		operatingTime = 0
 		lastMET = 0
-		currentFlightData = 2604.87012
-		initialFlightData = 2604.87012
-		missionStartTime = 60588158.400473014
+		currentFlightData = 5735.63916
+		initialFlightData = 5735.63916
+		missionStartTime = 123703268.32404962
 		activeConfig = 
 		stagingEnabled = True
 		EVENTS
@@ -7475,12 +7477,12 @@ PART
 	symMethod = Radial
 	autostrutMode = Off
 	rigidAttachment = False
-	istg = 2
+	istg = 1
 	resPri = 0
 	dstg = 2
-	sidx = 2
-	sqor = 2
-	sepI = 2
+	sidx = 1
+	sqor = 1
+	sepI = 1
 	attm = 0
 	sameVesselCollision = False
 	modCost = 0
@@ -7924,9 +7926,9 @@ PART
 	istg = 2
 	resPri = 0
 	dstg = 2
-	sidx = 3
+	sidx = 2
 	sqor = 2
-	sepI = 2
+	sepI = 1
 	attm = 0
 	sameVesselCollision = False
 	modCost = 0

@@ -1,5 +1,5 @@
 ship = Archer Mk1
-version = 1.10.1
+version = 1.8.1
 description = 
 type = VAB
 size = 11.0063,28.6604881,8.02321625
@@ -12,6 +12,7 @@ OverrideDefault = False,False,False,False
 OverrideActionControl = 0,0,0,0
 OverrideAxisControl = 0,0,0,0
 OverrideGroupNames = ,,,
+upgraded = ProceduralParts 2.1 Bezier Cone Upgrader // Updates ProceduralParts Bezier Shapes to Custom Settings
 PART
 {
 	part = proceduralAvionics_4293123806
@@ -142,11 +143,12 @@ PART
 	{
 		name = ProceduralShapeBezierCone
 		isEnabled = False
-		selectedShape = Round #1
+		selectedShape = Round1
 		topDiameter = 0.800000012
 		bottomDiameter = 1
 		length = 0.5
 		stagingEnabled = True
+		shapePoints = 0.400000006,0.00100000005,1,0.600000024
 		EVENTS
 		{
 		}
@@ -2044,6 +2046,7 @@ PART
 		}
 		UPGRADESAPPLIED
 		{
+			upgrade = commsTL1
 		}
 	}
 	MODULE
@@ -2203,11 +2206,12 @@ PART
 	{
 		name = ProceduralShapeBezierCone
 		isEnabled = True
-		selectedShape = Peaked #1
+		selectedShape = Peaked1
 		topDiameter = 0
 		bottomDiameter = 0.300000012
 		length = 1.20000005
 		stagingEnabled = True
+		shapePoints = 0.400000006,0.200000003,0.800000012,0.600000024
 		EVENTS
 		{
 		}
@@ -3024,9 +3028,9 @@ PART
 		isEnabled = True
 		operatingTime = 0
 		lastMET = 0
-		currentFlightData = 9828.30371
+		currentFlightData = 10000
 		initialFlightData = 10000
-		missionStartTime = 23210420.605541658
+		missionStartTime = 123703268.32404962
 		activeConfig = 
 		stagingEnabled = True
 		EVENTS
@@ -4815,9 +4819,9 @@ PART
 		isEnabled = True
 		operatingTime = 0
 		lastMET = 0
-		currentFlightData = 9828.30371
+		currentFlightData = 10000
 		initialFlightData = 10000
-		missionStartTime = 23210420.605541658
+		missionStartTime = 123703268.32404962
 		activeConfig = 
 		stagingEnabled = True
 		EVENTS
@@ -5606,7 +5610,7 @@ PART
 	sepI = 2
 	attm = 0
 	sameVesselCollision = False
-	modCost = 2597.5166
+	modCost = 330.110077
 	modMass = -0.596196115
 	modSize = 0,0,0
 	link = ROT-GenericTank-Separate_4292923730
@@ -5712,11 +5716,12 @@ PART
 	{
 		name = ProceduralShapeBezierCone
 		isEnabled = False
-		selectedShape = Round #1
+		selectedShape = Round1
 		topDiameter = 0.800000012
 		bottomDiameter = 1
 		length = 0.5
 		stagingEnabled = True
+		shapePoints = 0.400000006,0.00100000005,1,0.600000024
 		EVENTS
 		{
 		}
@@ -7031,6 +7036,7 @@ PART
 		}
 		UPGRADESAPPLIED
 		{
+			upgrade = commsTL1
 		}
 	}
 	MODULE
@@ -7120,7 +7126,7 @@ PART
 	sepI = 2
 	attm = 0
 	sameVesselCollision = False
-	modCost = 134.580292
+	modCost = 82.9709091
 	modMass = 0.401506186
 	modSize = 0,0,0
 	link = ROE-RD100_4292940484
@@ -7404,7 +7410,7 @@ PART
 	{
 		name = ModuleToolingPTank
 		isEnabled = True
-		addedCost = 51.6093826
+		addedCost = 0
 		stagingEnabled = True
 		EVENTS
 		{
@@ -7829,9 +7835,9 @@ PART
 		isEnabled = True
 		operatingTime = 0
 		lastMET = 0
-		currentFlightData = 0
-		initialFlightData = 0
-		missionStartTime = 23210420.605541658
+		currentFlightData = 5735.63916
+		initialFlightData = 5735.63916
+		missionStartTime = 123703268.32404962
 		activeConfig = 
 		stagingEnabled = True
 		EVENTS
@@ -9823,12 +9829,12 @@ PART
 	symMethod = Radial
 	autostrutMode = Off
 	rigidAttachment = False
-	istg = 4
+	istg = 3
 	resPri = 0
 	dstg = 6
-	sidx = 2
-	sqor = 4
-	sepI = 4
+	sidx = 1
+	sqor = 3
+	sepI = 3
 	attm = 0
 	sameVesselCollision = False
 	modCost = 0
@@ -10272,9 +10278,9 @@ PART
 	istg = 4
 	resPri = 0
 	dstg = 6
-	sidx = 3
+	sidx = 2
 	sqor = 4
-	sepI = 4
+	sepI = 3
 	attm = 0
 	sameVesselCollision = False
 	modCost = 0
