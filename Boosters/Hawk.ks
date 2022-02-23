@@ -97,22 +97,25 @@ if runMode = 2.1 {
 		gv_ap*1000,
 		gv_intAzimith,
 		0,//Target true anomoly
-		2, //shutdown stability lock parameters time.
+		3, //shutdown stability lock parameters time.
 		//Stage 3
 		150, // stage three estimated burn length
 		118, //estimated mass flow(kg/s)
 		24500, //estimated start mass in kg
 		3067, //estimated exhuast vel (thrust(N)/massflow(kg/s))
-		150 ////(S-Ve/avg_acc(in m/s)) estimated effective time to burn all propellant.S-Ve = ISP*g0
+		150, ////(S-Ve/avg_acc(in m/s)) estimated effective time to burn all propellant.S-Ve = ISP*g0
+		5 /// overburns by about 5m/s of average due to seperation thrusters
 	).
  	set runMode to 3.1.
 }	
 
 if runMode = 3.1 { 
 	Print "Run mode is:" + runMode.
-	Stage. //fairing relased which was missed 
+	Stage. //payload release
 	wait 1.
-	Stage. //release payload
+	if not Stage:NUMBER = 0{
+		Stage. //additional if fairing relased was missed 
+	}
 	set runMode to 4.1.
 }
 

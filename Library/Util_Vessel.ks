@@ -15,9 +15,14 @@
 		// ff_mAngle,
 		// ff_Avionics_off,
 		// ff_Avionics_on,
-		// hf_360AngDiff,
-		// hf_180AngDiff,
-		// ff_clearLine.
+		// ff_clearLine,
+		// ff_Alarm
+
+///////////////////////////////////////////////////////////////////////////////////
+///// List of helper functions that are called internally
+///////////////////////////////////////////////////////////////////////////////////
+// hf_360AngDiff
+// hf_180AngDiff
 
 /////////////////////////////////////////////////////////////////////////////////////	
 //File Functions	
@@ -136,7 +141,7 @@ function ff_partslist{
 ///////////////////////////////////////////////////////////////////////////////////
 
 function ff_Gravity{
-	Parameter Surface_Elevation is gl_surfaceElevation().
+	Parameter Surface_Elevation is SHIP:GEOPOSITION:TERRAINHEIGHT.
 	Set SEALEVELGRAVITY to body:mu / (body:radius)^2. // returns the sealevel gravity for any body that is being orbited.
 	Set GRAVITY to body:mu / (ship:Altitude + body:radius)^2. //returns the current gravity experienced by the vessel	
 	Set AvgGravity to sqrt(		(	(GRAVITY^2) +((body:mu / (Surface_Elevation + body:radius)^2 )^2)		)/2		).// using Root mean square function to find the average gravity between the current point and the surface which have a squares relationship.
@@ -185,7 +190,56 @@ function ff_collect_science {
     hf_transfer_science().
     wait 0.5.
 }
+////////////////////////////////////////////////////////////////
+
+FUNCTION ff_mAngle{
+PARAMETER a.
+
+  UNTIL a >= 0 { SET a TO a + 360. }
+  RETURN MOD(a,360).
   
+}
+
+////////////////////////////////////////////////////////////////
+
+Function ff_Avionics_off{
+	Local P is SHIP:PARTSNAMED(core:part:Name)[0].
+	Local M is P:GETMODULE("ModuleProceduralAvionics").
+	If M:HasEVENT("Shutdown Avionics"){
+		M:DOEVENT("Shutdown Avionics").
+	}
+}
+////////////////////////////////////////////////////////////////
+
+Function ff_Avionics_on{
+	Local P is SHIP:PARTSNAMED(core:part:Name)[0].
+	Local M is P:GETMODULE("ModuleProceduralAvionics").
+	If M:HasEVENT("Activate Avionics"){
+		M:DOEVENT("Activate Avionics").
+	}
+}
+
+////////////////////////////////////////////////////////////////
+function ff_clearLine {
+	parameter line.
+	local i is 0.
+	local s is "".
+	until i = terminal:width {
+		set s to " " + s.
+		set i to i + 1.
+	}
+	print s at (0,line).
+}
+////////////////////////////////////////////////////////////////
+Function ff_Alarm{
+	Parameter starttime, offset is 180.
+	If ADDONS:Available("KAC") {		  // if KAC installed	  
+		Set ALM to ADDALARM ("Maneuver", starttime - offset, SHIP:NAME ,"").// creates a KAC alarm 3 mins prior to the manevour node
+	}
+}
+
+////////////////////////////////////////////////////////////////
+
 function hf_highlight_part {
     parameter SP, SM.
     if not SM:HASDATA and not SM:INOPERABLE { 
@@ -199,7 +253,8 @@ function hf_highlight_part {
 		return false. 
 	}
 } 
-  
+////////////////////////////////////////////////////////////////  
+
 function hf_do_science {
     parameter SM.
     if not SM:HASDATA and not SM:INOPERABLE {
@@ -210,7 +265,8 @@ function hf_do_science {
 		}
 	}
 }
-  
+////////////////////////////////////////////////////////////////
+
 function hf_transfer_science {
     for sc in ship:modulesnamed("ModuleScienceContainer") {
 		print "Transfering Science".
@@ -218,8 +274,8 @@ function hf_transfer_science {
 		wait 0.
     }
 }
-	
-	
+////////////////////////////////////////////////////////////////
+ 	
 function ff_Science
 {
   parameter one_use IS TRUE, overwrite IS FALSE.
@@ -239,55 +295,17 @@ function ff_Science
 	}
 }	//end function
 
-/////////////////////////////////////////
 
-FUNCTION ff_mAngle{
-PARAMETER a.
-
-  UNTIL a >= 0 { SET a TO a + 360. }
-  RETURN MOD(a,360).
-  
-}
-
-Function ff_Avionics_off{
-	Local P is SHIP:PARTSNAMED(core:part:Name)[0].
-	Local M is P:GETMODULE("ModuleProceduralAvionics").
-	If M:HasEVENT("Shutdown Avionics"){
-		M:DOEVENT("Shutdown Avionics").
-	}
-}
-
-Function ff_Avionics_on{
-	Local P is SHIP:PARTSNAMED(core:part:Name)[0].
-	Local M is P:GETMODULE("ModuleProceduralAvionics").
-	If M:HasEVENT("Activate Avionics"){
-		M:DOEVENT("Activate Avionics").
-	}
-}
+////////////////////////////////////////////////////////////////
+//Helper Functions
+////////////////////////////////////////////////////////////////
 
 Function hf_360AngDiff{
 	Parameter a, b.
 	return 180 - abs(abs(a-b)-180). 
 }
+////////////////////////////////////////////////////////////////
 Function hf_180AngDiff{
 	Parameter a, b.
 	return 90 - abs(abs(a-b)-90). 
-}
-
-function ff_clearLine {
-	parameter line.
-	local i is 0.
-	local s is "".
-	until i = terminal:width {
-		set s to " " + s.
-		set i to i + 1.
-	}
-	print s at (0,line).
-}
-
-Function ff_Alarm{
-	Parameter starttime, offset is 180.
-	If ADDONS:Available("KAC") {		  // if KAC installed	  
-		Set ALM to ADDALARM ("Maneuver", starttime - offset, SHIP:NAME ,"").// creates a KAC alarm 3 mins prior to the manevour node
-	}
 }

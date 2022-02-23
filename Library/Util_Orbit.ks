@@ -48,108 +48,7 @@ function ff_CircOrbitVel{ //returns the circular orbital velocity of the current
 	parameter alt.
 	return sqrt(Body:MU/(alt + body:radius)).
 }
-///////////////////////////////////////////////////////////////////////////////////
-Function ff_Find_AN_INFO { // returns parameters related to the ascending node of the current vessel and a target vessel.
-	parameter tgt.
-	///Orbital vectors
-	local ship_V is ship:obt:velocity:orbit.//:normalized * 9000000000.
-	local tar_V is tgt:obt:velocity:orbit.//:normalized * 9000000000.
 
-	///Position vectors
-	Local ship_r is ship:position - body:position.
-	Local tar_r is tgt:position - body:position.
-
-	////plane normals also known as H or angular momentum
-	local ship_N is vcrs(ship_V,ship_r).//:normalized * 9000000000.
-	local tar_N is vcrs(tar_V,tar_r).//:normalized * 9000000000.
-
-	/// AN vector which is perpendicular to the plane normals
-	set AN to vcrs(ship_N,tar_N):normalized. // the magnitude is irrelavent as it is a combination of parralellograms which has not real meaning
-	Set AN_inc to vang(ship_N,tar_N). // the inclination change angle
-
-	local arr is lexicon().
-	arr:add ("ship_V", ship_V).
-	arr:add ("ship_r", ship_r).
-	arr:add ("ship_N", ship_N).
-	arr:add ("tar_V", tar_V).
-	arr:add ("tar_r", tar_r).
-	arr:add ("tar_N", tar_N).
-	arr:add ("AN", AN).
-	arr:add ("AN_inc", AN_inc).
-	
-	Return (arr).
-	
-}/// End Function
-///////////////////////////////////////////////////////////////////////////////////
-
-Function ff_Find_AN_UT { // Finds the time to the ascending node of the current vessel and a target vessel/moon.
-//TODO: Remove redundant code relating to sector adjustment once fully tested.
-//TODO: Remove redundant code relating to Ship TA and AN Eccetric anomoly and Mean anomoly once the time to PE code is fully tested.
-//TODO: Remove redundant array call from AN info.
-	parameter tgt.
-	Print "Finding AN/DN..".		  
-	//Conduct manever at the AN or DN to ensure inclination	is spot on and low dv.
-	local arr is lexicon().
-	Set arr to ff_Find_AN_INFO(tgt).
-	// Set ship_V to arr ["ship_V"].
-	// Set ship_r to arr ["ship_r"].
-	// Set ship_N to arr ["ship_N"].
-	// Set tar_V to arr ["tar_V"].
-	// Set tar_r to arr ["tar_r"].
-	// Set tar_N to arr ["tar_N"].
-	Set AN to arr ["AN"].
-	Set AN_inc to arr ["AN_inc"].
-
-	//Current Ship Information.
-	Set Ship_e to Ship:orbit:Eccentricity.
-	Set Ship_Per to Ship:orbit:Period.
-	Set ship_eta_apo to eta:apoapsis.
-	Set ship_eta_PE to eta:periapsis.
-	Set Ship_a to ship:orbit:SEMIMAJORAXIS.
-
-	Set AN_True_Anom to Constant:DegtoRad*(ff_TAvec(AN)).
-	Print "AN True Anom alt Rad" + AN_True_Anom.
-
-	Set AN_Ecc_Anom to ff_EccAnom(Ship_e, AN_True_Anom).
-	Print "AN Ecc Anom Rad" + AN_Ecc_Anom.
-	
-	Set AN_Mean_Anom to ff_MeanAnom (Ship_e, AN_Ecc_Anom).
-	Print "AN Mean Anom Rad" + AN_Mean_Anom.
-
-	Set AN_time_From_PE to ff_TAtimeFromPE(Constant:RadtoDeg*AN_True_Anom,Ship_e).
-	Print "AN_time_From_PE: " + AN_time_From_PE.
-	
-	local AN_time is ship_eta_PE + AN_time_From_PE.
-	Print "AN_time " + AN_time.	
-	
-	If (time:seconds + AN_time) < (time:seconds + 240){
-		Set AN_time to time:seconds + AN_time + Ship_Per. //put on next orbit as its too close to calculate in time.
-		Print "AN time too close Shifting Orbit".
-	}
-	Else {
-		Set AN_time to time:seconds + AN_time.
-	}
-	
-	Print "AN_time UT" + AN_time.
-	//Refine the UT using hill climb
-	ff_Seek_low(AN_time, ff_freeze(0), ff_freeze(0), ff_freeze(0), { 
-		parameter mnv. 
-		Set AN_time to time:seconds + mnv:ETA.
-		return - vang ((positionat(ship, time:seconds + mnv:eta)-body:position),AN). // want the angle to be zero between the ship radial vector and the AN node.
-		}
-	).
-	Set x to nextnode.
-	Set AN_time to time:seconds + x:ETA.
-	Remove nextnode.
-	wait 0.1.
-	If x:ETA < 240{
-		Set AN_time to AN_time + Ship_Per. //put on next orbit as its too close to calculate in time.
-		Print "AN time too close Shifting Orbit".
-	}
-	Print "Final AN time" + AN_time.
-	Return AN_time.
-
-}/// End Function
 ///////////////////////////////////////////////////////////////////////////////////	
 function ff_TAr {
 	parameter r, SMA, ecc. // full orbital radius, Semimajoraxis, eccentricity.
@@ -157,11 +56,7 @@ function ff_TAr {
 	local TA is arccos(p / r / ecc - 1 / ecc).
 	//Print "TAr:" + TA.
 	return TA. // Returns the True Anomoly at specified radius in degress
-	
-	//Old version
-	//Set TA to ((ship_a*(1-(ship_e*ship_e))) - ship_r:mag) / (ship_e * ship_r:mag).
-	//Set TA to arccos( TA ).//eq(4.82)
-	
+
 }
 ///////////////////////////////////////////////////////////////////////////////////	
 function ff_timeFromTA {
@@ -322,7 +217,6 @@ function ff_OrbitSplitVel{
 ////////////////////////////////////////////////////////////////
 //Helper Functions
 ////////////////////////////////////////////////////////////////
-
 
 
 

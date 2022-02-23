@@ -201,21 +201,19 @@ parameter dV, press is 0. // For RSS/RO engine values must be given unless they 
 	Local thrust is 0.
 	Local isp is 0.
 	//TODO: look at comapring the dv with the ff_stage_delta_v. If less look at the engine in the next stage and determine the delta_v and time to burn until the dv has been meet.
-	If engine_count = 0{ // only evaluate is figures not given
-		list engines in all_engines.
-		for en in all_engines {
-			if en:ignition and not en:flameout {
-				set thrust to thrust + en:possiblethrust.
-				set isp to isp + en:ISPAT(press).
-				set engine_count to engine_count + 1.
-			}
+	list engines in all_engines.
+	for en in all_engines {
+		if en:ignition and not en:flameout {
+			set thrust to thrust + en:possiblethrust.
+			set isp to isp + en:ISPAT(press).
+			set engine_count to engine_count + 1.
 		}
 	}
 	if engine_count = 0{
 		return 1. //return something to prevent error if above calcuation is used.
 	}
-	set isp to isp. //assumes only one type of engine in cluster
-	set thrust to thrust * 1000 * engine_count. // Engine Thrust (kg * m/s²)
+	set isp to isp/engine_count. //assumes only one type of engine in cluster
+	set thrust to thrust * 1000. // Engine Thrust (kg * m/s²)
 	//Print engine_count. //DEBUG
 	//Print isp. //DEBUG
 	//Print Thrust. //DEBUG

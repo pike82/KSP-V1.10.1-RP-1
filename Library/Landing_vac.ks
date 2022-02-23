@@ -6,67 +6,136 @@
 
 ///// Download Dependant libraies
 
-FOR file IN LIST(
-	"Util_Engine",
-	"Util_Landing",
-	"Util_Vessel",
-	"Hill_Climb",
-	"Util_Orbit"){ 
-		//Method for if to download or download again.
-		
-		IF (not EXISTS ("1:/" + file)) or (not runMode["runMode"] = 0.1)  { //Want to ignore existing files within the first runmode.
-			gf_DOWNLOAD("0:/Library/",file,file).
-			wait 0.001.	
-		}
-		RUNPATH(file).
-	}
-
 ///////////////////////////////////////////////////////////////////////////////////
 ///// List of functions that can be called externally
 ///////////////////////////////////////////////////////////////////////////////////
 
 	// local landing_vac is lex(
-		// "SuBurn",ff_SuBurn@,
-		// "CAB", ff_CAB@,
+		// ff_SuBurn,
+		// ff_CAB,
 		// "BestLand", ff_BestLand@,
 		// "HoverLand",ff_HoverLand@,
 		// "LandingPointSetup",ff_LandingPointSetup@
 	// ).
 
+///////////////////////////////////////////////////////////////////////////////////
+///// List of helper functions that are called internally
+///////////////////////////////////////////////////////////////////////////////////
+
+// hf_Fall
+
 ////////////////////////////////////////////////////////////////
 //File Functions
 ////////////////////////////////////////////////////////////////
-//Credits: Own
 
-Function ff_SuBurn {	
-Parameter ThrottelStartUp is 0.1, SafeAlt is 75, EndVelocity is 0.5. // end velocity must be positive
+Function ff_SuBurn {
+	Parameter EngISP, EngThrust, ThrottelStartUp is 0.1, SafeAlt is 5, EndVelocity is (-1.5). // end velocity must be negative
 	Lock Throttle to 0.0.
 	local Flight_Arr is lexicon().
-	set Flight_Arr to hf_fall().
-	LOCK STEERING to HEADING(90,90). // Lock in upright posistion and fixed rotation
-	Until Flight_Arr["fallDist"] + SafeAlt + (ThrottelStartUp * abs(ship:verticalspeed)) > gl_baseALTRADAR(){ // until the radar height is at the suicide burn height plus safe altitude and an allowance for the engine to throttle up to max thrust
+	local Grav_Arr is ff_Gravity().
+	local Grav is Grav_Arr["AVG"].
+	set Flight_Arr to hf_fall(Grav).
+	Lock steering to (-1) * SHIP:VELOCITY:SURFACE.
+	wait 0.05.
+	Until (Flight_Arr["fallDist"] + SafeAlt + (ThrottelStartUp * abs(ship:verticalspeed))) > (ship:Altitude - SHIP:GEOPOSITION:TERRAINHEIGHT) { // until the radar height is at the suicide burn height plus safe altitude and an allowance for the engine to throttle up to max thrust
 		//Run screen update loop to inform of suicide burn wait.
-		Set Flight_Arr to hf_fall().
+		Set Flight_Arr to hf_fall(Grav).
 		Clearscreen.
 		Print "gl_fallTime:" + Flight_Arr["fallTime"].
 		Print "gl_fallVel:" + Flight_Arr["fallVel"].
 		Print "gl_fallDist:" + Flight_Arr["fallDist"].
+		Print "gl_fallAcc:" + Flight_Arr["fallAcc"].
 		Print "gl_fallBurnTime:" + ff_burn_time(Flight_Arr["fallVel"]).
-		Print "Radar Alt:" + gl_baseALTRADAR().
+		Print "Radar Alt:" + (ship:Altitude - SHIP:GEOPOSITION:TERRAINHEIGHT).
+		Print SafeAlt.
 		Wait 0.001.
 	}
 	//Burn Height has been reached start the burn
-	until abs(verticalspeed) < EndVelocity  {
-		Lock Throttle to 1.0.
-		if (gl_baseALTRADAR < 0.25) or (Ship:Status = "LANDED"){ // this is used if the burn is intended to land the craft.
-			Lock Throttle to 0.
-			Unlock Throttle.
-			Break.
+	Local breakloop is 0.
+	until breakloop = 1 {
+		if abs(verticalspeed) < 20 {
+			LOCK STEERING to HEADING(90,90). // Lock in upright posistion and fixed rotation
+		}.
+		if SafeAlt < 6 { // allow throttle pulse on landing
+		Print "vertical Speed:" + verticalspeed.
+			If verticalspeed > EndVelocity{
+			Lock Throttle to 0.0.
+			} else {
+				Lock Throttle to 1.0.
+			}.
+			if (((ship:Altitude - SHIP:GEOPOSITION:TERRAINHEIGHT) < 0.25) or (Ship:Status = "LANDED"))  { // this is used if the burn is intended to land the craft.
+				Lock Throttle to 0.
+				Set SHIP:CONTROL:PILOTMAINTHROTTLE to 0.
+				Unlock Throttle.
+				Print "break loop landed".
+				Set breakloop to 1.
+			}.
+		}else{
+			Lock Throttle to 1.0.
+			if abs(verticalspeed) < 5 { 
+				Lock Throttle to 0.
+				Set SHIP:CONTROL:PILOTMAINTHROTTLE to 0.
+				Unlock Throttle.
+				Print "break loop high".
+				Set breakloop to 1.
+			}
 		}
 		Wait 0.01.
 	} // end Until
 	// Note: if the ship does not meet these conditions the throttle will still be locked at 1, you will need to ensure a landing has taken place or add in another section in the runtime to ensure the throttle does not stay at 1 an make the craft go back upwards.
 } //End of Function
+
+
+
+Function ff_CAB{ 
+	// The CAB land function maintains a pure constant altitude during the burn and therefore may not be appropriate for highly elliptical orbits as it will maintain a constant altitude when the burn starts which may be well above the periapsis and therefore not ideal. 
+	//It is intended once the CAB is complete that a seperate function is used to rotate the vessel to conduct a suicide land / hover land.
+	//this landing tries to burn purely horizontal and uses a pid to determine the desired downwards velocity and cancel it out through a pitch change. It does not stop the throttle or point upwards, that is upto the user to code in or allow a transistion into another function.
+
+	Parameter BurnStartTime is time:seconds, EndHeight is 5000, EndHorzSp is 500, VertStp is 0, maxpitch is 45, ThrottelStartTime is 0.1.
+	
+	Set PEVec to velocityat(Ship, ETA:PERIAPSIS + TIME:SECONDS):Surface.
+	Set Horzvel to PEVec:mag. // its known at PE the verVel is Zero so all velocity must in theory be horizontal	
+	
+	Until time:seconds > (BurnStartTime-ThrottelStartTime){
+		clearscreen.
+		Print "Burn Horizontal Velocity to Cancel:" + PEVec:mag.
+		Print "Wating for CAB Start in :" + (BurnStartTime - Time:seconds).
+		Lock steering to ship:retrograde. 
+		wait 0.001.
+	}
+	
+	Set PIDVV to PIDLOOP(0.03, 0, 0.05, -0.1, 0.1).//SET PID TO PIDLOOP(KP, KI, KD, MINOUTPUT, MAXOUTPUT).	
+	Set PIDVV:SETPOINT to VertStp. // if we want the altitude to remain constant no vertical velocity, if we want some level of free fall set to a negative value.
+	Set highpitch to 0.
+
+	//lock steering to retrograde * r(-highPitch, 0, 0):vector.
+	Lock Horizon to VXCL(UP:VECTOR, -VELOCITY:SURFACE). //negative makes it retrograde
+	LOCK STEERING TO LOOKDIRUP(ANGLEAXIS(-highPitch,
+                        VCRS(horizon,BODY:POSITION))*horizon,
+						FACING:TOPVECTOR).//lock to retrograde at horizon
+	if throttle  = 0{ //checks if the throttle is already in operation
+		RCS on.
+		SET SHIP:CONTROL:FORE to 1.0.
+		wait 5.
+		Lock Throttle to 1.0.
+		SET SHIP:CONTROL:FORE to 0.
+	}
+	Until (ALT:RADAR < EndHeight) OR (SHIP:GROUNDSPEED < EndHorzSp){
+		//Create PID to adjust the craft pitch (without thrusting downward) which maintains a vertical velocity of zero and regulates the velocity of burn height change if not zero reventing a pitch above the horizontal.		
+		Set dpitch TO PIDVV:UPDATE(TIME:SECONDS, verticalspeed). //Get the PID on the AlT diff as desired vertical velocity
+		Set highpitch to min(max(highpitch + dpitch,0),maxpitch). // Ensure the pitch does not push downward in gravity direction and limits the pitch in the gravity direction using maxpitch
+		Clearscreen.
+		Print "Undertaking CAB".
+		Print "Ground Speed: " + SHIP:GROUNDSPEED.
+		Print "Pitch: " + highpitch.
+		wait 0.01.
+	}
+	unlock Steering.
+} //End of Function
+
+////////////////////////////////////////////////////////////////
+
 
 //////////////////////////////////////////////////////////////////
 //Credits: Own with ideas sourced from http://www.danielrings.com/2014/08/07/kspkos-grasshopper-a-model-of-spacexs-grasshopper-program-in-the-kerbal-space-program-using-the-kos-mod/
@@ -113,89 +182,7 @@ Parameter Hover_alt is 50, BaseLoc is gl_shipLatLng().
 
 ////////////////////////////////////////////////////////////////
 
-// The CAB land function maintains a pure constant altitude during the burn and therefore may not be appropriate for highly elliptical orbits as it will maintain a constant altitude when the burn starts which may be well above the periapsis and therefore not ideal. 
-//It is intended once the CAB is complete that a seperate function is used to rotate the vessel to conduct a suicide land / hover land.
 
-//Credits: OWN
-
-Function ff_CAB{ 
-	//this landing tries to burn purely horizontal and uses a pid to determine the desired downwards velocity and cancel it out through a pitch change. It does not stop the throttle or point upwards, that is upto the user to code in or allow a transistion into another function.
-
-	Parameter ThrottelStartTime is 0.1, SafeAlt is 50, TargetLatLng is "Null", EndHorzVel is 0. // throttle start time is the time it take the trottle to get up to full power TODO: have this also take into account the rotation of the body so it can target a specific landing spot.
-	
-	Set PEVec to velocityat(Ship, ETA:PERIAPSIS + TIME:SECONDS):Surface.
-	Set Horzvel to PEVec:mag. // its known at PE the verVel is Zero so all velocity must in theory be horizontal	
-	
-	Set Dist to 0.
-	Set profiletime to 0.
-	Set tgtPERad to Orbit:Periapsis+body:radius.
-	Set StartMass to (ship:mass * 1000).
-	
-	until Horzvel <= EndHorzVel {//run the iteration until the ground velocity is 0 or another value if specified
-		Set StartMass to StartMass - ff_mdot().
-		Set acc to (ship:availablethrust* 1000)/(StartMass). //the acceleration of the ship in one second
-		
-		Set GravCancel to ((body:mu/(tgtPERad^2)) - ((Horzvel^2)/tgtPERad))/acc. //portion of vehicle acceleration used to counteract gravity as per PEG ascent guidance formula in one second
-		
-		Set Horzvel to Horzvel - abs(acc - GravCancel). // current horz velocity minus the acceleration in the horitontal direction.
-		Set dist to dist + Horzvel.
-		Set profiletime to profiletime + 1.
-		Clearscreen.
-		Print acc.
-		Print GravCancel.
-		Print Horzvel.
-		Print dist.
-		Print profiletime.
-		wait 0.01.
-	}
-	
-	Set BurnStartTime to (ETA:PERIAPSIS + TIME:SECONDS) - profiletime.
-	If ETA:PERIAPSIS < profiletime +10 {
-		Set BurnStartTime to BurnStartTime + Ship:orbit:period. // ensures it will start the burn on the next orbit if too early with a 10 second buffer to allow for alignment and processing finish
-	}
-	
-	local m is ship:mass * 1000. // Starting mass (kg)
-	local e is constant():e. // Base of natural log
-	local EstDv is (ff_Vel_Exhaust() * ln(m / (m - (profiletime*ff_mdot)))).
-	
-	Until time:seconds > BurnStartTime{
-		clearscreen.
-		Print "Burn Time :" + profiletime.
-		Print "Burn Horizontal Velocity to Cancel:" + PEVec:mag.
-		Print "Burn Estimated dV:" + EstDv.
-		Print "Burn Dist:" + dist.
-		Print "Wating for CAB Start in :" + (BurnStartTime - Time:seconds).
-		Lock steering to ship:retrograde. 
-		wait 0.001.
-	}
-	
-	Set PIDVV to PIDLOOP(0.03, 0, 0.05, -0.1, 0.1).//SET PID TO PIDLOOP(KP, KI, KD, MINOUTPUT, MAXOUTPUT).	
-	Set PIDVV:SETPOINT to 0. // we want the altitude to remain constant so no vertical velocity.
-	Set highpitch to 0.
-
-	//lock steering to retrograde * r(-highPitch, 0, 0):vector.
-	Lock Horizon to VXCL(UP:VECTOR, -VELOCITY:SURFACE). //negative makes it retrograde
-	LOCK STEERING TO LOOKDIRUP(ANGLEAXIS(-highPitch,
-                        VCRS(horizon,BODY:POSITION))*horizon,
-						FACING:TOPVECTOR).//lock to retrograde at horizon
-	
-	Set Basetime to time:seconds.
-	Lock Throttle to 1.0.
-	Until (Basetime + profiletime) - time:seconds < 0 OR SHIP:GROUNDSPEED < 2{
-		//Create PID to adjust the craft pitch (without thrusting downward) which maintains a vertical velocity of zero and regulates the velocity of burn height change if not zero reventing a pitch above the horizontal.		
-		Set dpitch TO PIDVV:UPDATE(TIME:SECONDS, verticalspeed). //Get the PID on the AlT diff as desired vertical velocity
-		Set highpitch to max(highpitch + dpitch,0). // Ensure the pitch does not go below zero as gravity will efficently lower the veritcal velocity if required
-		Clearscreen.
-		Print "Undertaking CAB".
-		Print "Ground Speed: " + SHIP:GROUNDSPEED.
-		Print "Pitch: " + highpitch.
-		Print "Burn Ending in : " + ((Basetime + profiletime) - time:seconds).
-		wait 0.01.
-	}
-	unlock Steering.
-} //End of Function
-
-////////////////////////////////////////////////////////////////
 
 //Credits: OWN
 
@@ -342,8 +329,9 @@ Function ff_LandingPointSetup{
 ////////////////////////////////////////////////////////////////
 Function hf_Fall{
 //Fall Predictions and Variables
-	local fallTime is ff_quadraticPlus(-gl_Grav["Avg"]/2, -ship:verticalspeed, gl_baseALTRADAR()).//r = r0 + vt - 1/2at^2 ===> Quadratic equiation 1/2*at^2 + bt + c = 0 a= acceleration, b=velocity, c= distance
-	local fallVel is abs(ship:verticalspeed) + (gl_Grav["Avg"]*fallTime).//v = u + at
+	Parameter Grav, baseALTRADAR is ALT:RADAR.
+	local fallTime is ff_quadraticPlus(-Grav/2, -ship:verticalspeed, baseALTRADAR).//r = r0 + vt - 1/2at^2 ===> Quadratic equiation 1/2*at^2 + bt + c = 0 a= acceleration, b=velocity, c= distance
+	local fallVel is abs(ship:verticalspeed) + (Grav*fallTime).//v = u + at
 	local fallAcc is (ship:AVAILABLETHRUST/ship:mass). // note is is assumed this will be undertaken in a vaccum so the thrust and ISP will not change. Otherwise if undertaken in the atmosphere drag will require a variable thrust engine so small variations in ISP and thrust won't matter becasue the thrust can be adjusted to suit.
 	local fallDist is (fallVel^2)/ (2*(fallAcc)). // v^2 = u^2 + 2as ==> s = ((v^2) - (u^2))/2a 
 	

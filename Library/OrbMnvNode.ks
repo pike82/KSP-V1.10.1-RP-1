@@ -39,6 +39,7 @@ parameter starttime is 0, tol is 0.1, Ullage_time is 10, n is nextnode, v is n:b
 	}
 	Local originalVector is n:burnvector.
 	Lock Throttle to min(max(0.0001,ff_burn_time(n:burnvector:mag)),1).//If can be throttled this allows for more accurate shutoff
+	wait tol. //provides engine start up time
 	until hf_isManeuverComplete(originalVector, n:burnvector, tol){
 		if ship:maxthrust < 0.1 { // checks to see if the next engine is enagaged and if it is stage to activate engine
 			stage.

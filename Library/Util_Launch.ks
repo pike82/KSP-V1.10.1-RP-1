@@ -5,9 +5,11 @@
 ///// List of functions that can be called externally
 ///////////////////////////////////////////////////////////////////////////////////
 	// local Util_Launch is lex(
-		// "LaunchAzimuth", ff_LaunchAzimuth@,
-		// "launchwindow", ff_launchwindow@,
-		// "FlightAzimuth", ff_FlightAzimuth@
+		// ff_LaunchAzimuth,
+		// ff_launchwindow,
+		// ff_FlightAzimuth,
+		//	ff_CheckAbort,
+		// 	ff_Abort
 	// ).
 	
 ////////////////////////////////////////////////////////////////
@@ -155,6 +157,77 @@ Parameter target , ascendLongDiff is 0.2.
 	wait 5.
 	return vang(hf_normalvector(ship),hf_normalvector(target)).
 }
+
+////////////////////////////////////////////////////////////////
+
+function ff_CheckAbort{
+	Parameter abvert is 5, vert is 0.1, altsp is 500, airsp is 5, Qsp is 0.05, ang is 5.
+	//Print "Checking low vs: " + (verticalspeed < vert). 
+	//Print "Checking low alt: " + (alt:radar < altsp) . 
+	//Print "Checking low airsp: " + (ship:airspeed > airsp). 
+	If (verticalspeed < vert) and (alt:radar < altsp) and (ship:airspeed > airsp){ ///checks to see if the rocket is heading downwards at low altitudes
+		Print"Low Airspeed and altitude abort".
+		ff_Abort(abvert, altsp, Qsp).
+	}
+	//Print "Checking angle: " + ((SHIP:Q > Qsp) and (ship:airspeed > airsp)). 
+	If (SHIP:Q > Qsp) and (ship:airspeed > airsp) {
+		if vang(SHIP:FACING:FOREVECTOR, srfprograde:vector) > ang{
+			Print"AoA abort".
+			ff_Abort(abvert, altsp, Qsp).
+		}
+	}
+	//Print "Checking engines: " + (ship:airspeed > airsp). 
+	Local englist is List().
+	LIST engines IN engList.
+	FOR eng IN engList { 
+		If eng:IGNITION and (ship:airspeed > airsp){
+			if eng:THRUST < 0.95 * eng:AVAILABLETHRUST{
+				Print"Engine Failure abort".
+				ff_Abort(abvert, altsp, Qsp).
+			}
+		}
+	}
+}
+
+////////////////////////////////////////////////////////////////
+
+Function ff_Abort {
+	Parameter vert is 5, altsp is 500, Qsp is 0.05.
+	//if aborted = true {return.}
+	Local CurrCPU is CORE:TAG.
+	Print "Engine Shutdown!!!".
+	lock throttle to 0.
+	lock PILOTMAINTHROTTLE to 0.
+	local PROCESSOR_List is list().
+	LIST PROCESSORS IN PROCESSOR_List. // get a list of all connected cores
+	for Processor in PROCESSOR_List {
+		if NOT (Processor:TAG = CurrCPU){ //checks to see if another CPU is present to shutdown
+			Processor:DEACTIVATE().
+			Set aborted to True.
+			Print "Craft Aborted".
+		}
+	}
+	//Local englist is List().
+	LIST engines IN engList.
+	FOR eng IN engList { 
+		If eng:IGNITION {
+			eng:shutdown.
+		}
+	}
+	wait 0.1.
+	lock steering to Prograde.
+	abort on.
+	Print "Holding for seperation".
+	wait 1.
+	until (SHIP:Q < Qsp) and ((alt:radar > altsp) or (verticalspeed < vert )){
+		wait 0.5.
+	}
+	Print "Brakes on".
+	brakes on.
+	wait 0.5.
+	lock steering to Retrograde.
+}
+
 
 ////////////////////////////////////////////////////////////////
 //Helper Functions

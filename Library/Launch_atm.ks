@@ -184,7 +184,9 @@ function ff_Orbit_Steer{
 	T1 is 0, // stage one estimated burn length
 	mass_flow1 is 0, //estimated mass flow
 	s_Ve1 is 1, //estimated exhuast vel (do not make 0)
-	tau1 is 1. //(S-Ve/avg_acc) estimated effective time to burn all propellant
+	tau1 is 1, //(S-Ve/avg_acc) estimated effective time to burn all propellant
+// shoutdown offset for engine thrusts
+	s_vx_offset is 0.
 
 // determine T intial paramenters based on the number of stages.
 	If Stages < 2{
@@ -377,25 +379,22 @@ function ff_Orbit_Steer{
 		//cutoff process
 		if  (T3 < HSL) and (tau_lock = true) and (T2 = 0){
 			Until false{
-				set s_vx to sqrt(ship:velocity:orbit:sqrmagnitude - ship:verticalspeed^2).
-				if (tgt_vx -2) < s_vx{
-					lock Throttle to 0.
-					RCS on.
-					SET SHIP:CONTROL:FORE TO 1.0.
-					Local track is time:seconds.
-					until (ship:orbit:eccentricity < 0.0001) or (ship:periapsis > tgt_pe) or (tgt_vx < s_vx) or (time:seconds > track + 30){
-						wait 0.01.
-						set s_vx to sqrt(ship:velocity:orbit:sqrmagnitude - ship:verticalspeed^2).
-					}
-					SET SHIP:CONTROL:FORE TO 0.0.
-					RCS off.
-					Print "Insertion: "+ (TIME:SECONDS) AT (0,1).
-					Set loop_break to true.
-					break.
+				set s_vx to sqrt(ship:velocity:orbit:sqrmagnitude - ship:verticalspeed^2) + s_vx_offset.
+				Local track is time:seconds.
+				until (ship:orbit:eccentricity < 0.001) or (ship:periapsis > tgt_pe) or (tgt_vx < s_vx) or (time:seconds > track + 30){
+					wait 0.01.
+					set s_vx to sqrt(ship:velocity:orbit:sqrmagnitude - ship:verticalspeed^2) + s_vx_offset.
+					//Print tgt_vx AT (0,10). //DEBUG
+					//Print s_vx AT (0,11). //DEBUG
+					//Print ship:orbit:eccentricity AT (0,12). //DEBUG
+					//KUniverse:PAUSE(). //DEBUG
+					wait 0.001.
 				}
-				//Print tgt_vx. //DEBUG
-				//Print s_vx. //DEBUG
-				wait 0.001.
+				Lock Throttle to 0.
+				Set SHIP:CONTROL:PILOTMAINTHROTTLE TO 0.
+				Print "Insertion: "+ (TIME:SECONDS) AT (0,1).
+				Set loop_break to true.
+				break.
 			}
 		}
 		
@@ -467,11 +466,13 @@ function ff_Orbit_Steer{
 			}
 			if T3> 0 and (T2 = 0){
 
-				if(T3_new <= HSL) { // below this the solution starts to become very sensitive and A and B should not longer be re-calculated but fixed until insertion
+				if(T3_new <= HSL) and (Converged = 1){ // below this the solution starts to become very sensitive and A and B should not longer be re-calculated but fixed until insertion
 					Print "Terminal guidance enabled" AT (0,2). 
-					Set peg_step to 1000.
+					Set peg_step to 1000. //we no longer want to go into the minor loop to calculate A, B and T3.
 					//Print tau_lock. //DEBUG
 					Set tau_lock to true.
+					Print "tau locked" AT (0,3).
+					//KUniverse:PAUSE(). //DEBUG
 				} Else{
 					Print "T3 PEG Loop" AT (0,5).
 					set A to A3.
