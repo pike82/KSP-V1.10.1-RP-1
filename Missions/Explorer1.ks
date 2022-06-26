@@ -1,3 +1,5 @@
+//Used for early interplanetary probes
+
 CORE:PART:GETMODULE("kOSProcessor"):DOEVENT("Open Terminal").
 SET TERMINAL:HEIGHT TO 65.
 SET TERMINAL:WIDTH TO 45.

@@ -1,3 +1,5 @@
+////upper stage for controlled probes with nodes manuvers
+
 CORE:PART:GETMODULE("kOSProcessor"):DOEVENT("Open Terminal").
 SET TERMINAL:HEIGHT TO 65.
 SET TERMINAL:WIDTH TO 45.
@@ -5,6 +7,8 @@ SET TERMINAL:BRIGHTNESS TO 0.8.
 SET TERMINAL:CHARHEIGHT TO 10.
 
 Global RunMode is 0.0.
+
+//Hawk values 86 , 250, 250
 
 local wndw is gui(300).
 set wndw:x to 400. //window start position
@@ -76,7 +80,7 @@ until holdload = true {
 	}
 	wait 0.2.
 }
-Print "Explorer1 active".
+Print "Zeus1 active".
 wait 0.25.
 	Set SHIP:CONTROL:PILOTMAINTHROTTLE to 0.
 

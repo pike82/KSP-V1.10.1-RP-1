@@ -1,3 +1,5 @@
+//Early booster with PEG guidance second stage.
+
 CORE:PART:GETMODULE("kOSProcessor"):DOEVENT("Open Terminal").
 SET TERMINAL:HEIGHT TO 65.
 SET TERMINAL:WIDTH TO 45.

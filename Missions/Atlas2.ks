@@ -1,3 +1,5 @@
+//Gemini Capsule
+
 CORE:PART:GETMODULE("kOSProcessor"):DOEVENT("Open Terminal").
 SET TERMINAL:HEIGHT TO 65.
 SET TERMINAL:WIDTH TO 45.
@@ -105,6 +107,7 @@ if runMode = 0.1 {
 
 if runMode = 1.1 { 
 	Print "Run mode is:" + runMode.
+	//deorbit burn is 100m/s
 	set runMode to 10.1.
 }
 ///Final and abort runmode

@@ -15,13 +15,12 @@ Global grndOffset is 0. //Distance above the ground of the landing spot (ie. bul
 Global EngineStartTime is TIME:SECONDS.
 Global Start_mass is ship:mass.
 Global LndMode is 0.
-Global ASDS_limit is 1700.
-Global ASDS_limit_max is 2100.
+Global ASDS_limit is 1900.
+Global ASDS_limit_max is 2400.
 Global burn_stt is 0.008.//800Pa //CRS-11 50.2km and 1250 m/s at 06:10 mm:ss;
 Global burn_alt is 50000.
 Global burn_stp is 34.
 Global burn_stps is 800.
-Global overshoot is 0.
 
 
 
@@ -36,8 +35,7 @@ Global gl_TargetLatLng is latlng(28.49751, -80.53525). // Spacex LZ-1, long bigg
 lock mapDist to ((ship:altitude^2)*0.0000082)+(ship:altitude*0.216)+10.
 
 //Droneship co-ords
-//Global gl_ALT_TargetLatLng is latlng(28.45, -74.30). 11 tonne
-//Global gl_ALT_TargetLatLng is latlng(28.45, -73.75). 16.5 tonne
+//Global gl_ALT_TargetLatLng is latlng(28.45, -74.30). 
 
 // Get Booster Values
 Print core:tag.
@@ -45,7 +43,7 @@ local wndw is gui(300).
 set wndw:x to 400. //window start position
 set wndw:y to 120.
 
-Print "v1.2".
+Print "v1.1".
 local label is wndw:ADDLABEL("Enter Booster Values").
 set label:STYLE:ALIGN TO "CENTER".
 set label:STYLE:HSTRETCH TO True. // Fill horizontally
@@ -56,25 +54,25 @@ Print gl_TargetLatLng.
 
 local box_azi is wndw:addhlayout().
 	local azi_label is box_azi:addlabel("Heading").
-	local azivalue is box_azi:ADDTEXTFIELD("88").
+	local azivalue is box_azi:ADDTEXTFIELD("90").
 	set azivalue:style:width to 100.
 	set azivalue:style:height to 18.
 
 local box_pitch is wndw:addhlayout().
 	local pitch_label is box_pitch:addlabel("Start Pitch").
-	local pitchvalue is box_pitch:ADDTEXTFIELD("84"). // RTLS 85, ASDS: 11 tonne = 84, ASDS 16.5 tonne = 84.75
+	local pitchvalue is box_pitch:ADDTEXTFIELD("85").
 	set pitchvalue:style:width to 100.
 	set pitchvalue:style:height to 18.
 
 local box_RTLS is wndw:addhlayout().
 	local RTLS_label is box_RTLS:addlabel("Desired Dv"). //NROL-76 and CRS 11 provides first stage RTLS telem
-	local RTLSvalue is box_RTLS:ADDTEXTFIELD("9050").// //8200 LEO, 9250 GTO, give a 500 m/s margin so second stage can deorbit
+	local RTLSvalue is box_RTLS:ADDTEXTFIELD("8700").// //8700 LEO, 9750 GTO, give a margin so second stage can deorbit
 	set RTLSvalue:style:width to 100.
 	set RTLSvalue:style:height to 18.
 
 local box_RTLSMax is wndw:addhlayout().
 	local RTLSMax_label is box_RTLSMax:addlabel("Second Stage DV"). //NROL-76 and CRS 11 provides first stage RTLS telem
-	local RTLSMaxvalue is box_RTLSMax:ADDTEXTFIELD("6850").//5.5tonne = 8,110, 11 tonne = 6,850, 16.5 tonne 6,000 
+	local RTLSMaxvalue is box_RTLSMax:ADDTEXTFIELD("6850").//5.5tonne = 8,110, 11 tonne = 6,850, 17 tonne 5,930 
 	set RTLSMaxvalue:style:width to 100.
 	set RTLSMaxvalue:style:height to 18.
 
@@ -135,7 +133,6 @@ If sv_Stage1_dV < 1000 {
 	set burn_alt to 50000.
 	set burn_stp to 37.
 	set burn_stps to 650.
-	set overshoot to -50.
 } else {
  	set LndMode to 1. // move to more agressive landing burn
 	Global gl_TargetLatLngSafe is ff_GeoConv(2,90,gl_TargetLatLng:lat,gl_TargetLatLng:lng). // Just short of landing pad for re entry burn
@@ -144,7 +141,6 @@ If sv_Stage1_dV < 1000 {
 	set burn_alt to 50000.
 	set burn_stp to 35.5.
 	set burn_stps to 700.
-	set overshoot to -60.
 }
 
 if sv_Stage1_dV > ASDS_limit{
@@ -155,21 +151,15 @@ if sv_Stage1_dV > ASDS_limit{
 	set burn_stt to 0.005.//500Pa
 	set burn_alt to 60000.
 	set burn_stp to 35.5.
-	set burn_stps to 700.
-	set overshoot to -55.
-	set radarOffset to -53.
+	set burn_stps to 750.
 }
 If sv_Stage1_dV > ASDS_limit_max{
 	set LndMode to 3. // move to more agressive ASDS landing burn
 	SET TARGET TO "ASDS".
-	Set gl_TargetLatLng to target:GEOPOSITION.
-	Print "gl_TargetLatLng" + target:GEOPOSITION.
 	set burn_stt to 0.005.//500Pa
-	set burn_alt to 65000.
+	set burn_alt to 60000.
 	set burn_stp to 34.
-	set burn_stps to 700.
-	set overshoot to -50.
-	set radarOffset to -53.
+	set burn_stps to 800.
 }
 
 Print "Geo Targets".
@@ -253,32 +243,31 @@ Until Runmode = 100 {
 			wait 0.1.
 		}
 		Print "Throttle down: " + (TIME:SECONDS - LOtime).
-		// Local englist is List().
-		// FOR eng IN engList {  
-		// 	IF eng:TAG ="1DC" { 
-		// 		set eng:THRUSTLIMIT to 70. 
-		// 		Print "Engine". 
-		// 	}
-		// }
-		Lock throttle to 0.85.
+		Local englist is List().
+		FOR eng IN engList {  
+			IF eng:TAG ="1DC" { 
+				set eng:THRUSTLIMIT to 70. 
+				Print "Engine". 
+			}
+		}
+		//Lock throttle to 0.9.
 		wait 15.
 		until SHIP:Q < 0.3 {
 			wait 0.1.
 		}
 		Print "Throttleup: " + (TIME:SECONDS - LOtime).
-		// Local englist is List().
-		// FOR eng IN engList {  
-		// 	IF eng:TAG ="1DC" { 
-		// 		set eng:THRUSTLIMIT to 100.  
-		// 		Print "Engine". 
-		// 	}
-		// }
-		Lock throttle to 1.0.
+		Local englist is List().
+		FOR eng IN engList {  
+			IF eng:TAG ="1DC" { 
+				set eng:THRUSTLIMIT to 100.  
+				Print "Engine". 
+			}
+		}
+		//Lock throttle to 1.0.
 		// MECO Shutdown time
-		local change  is 10000000.
-		until ((ship:mass < 155) and (LndMode > 1)) or ((LndMode < 2) and (ship:mass < 205) and (sv_Stage1_dV < ship:velocity:orbit:mag)){//Start_mass - 362{//(TIME:SECONDS - LOtime) > 148 { //RTLS time Start_mass(570) - 362 = 208
+		until ship:mass < 185 or ((LndMode < 2) and (ship:mass < 205) and (sv_Stage1_dV < ship:velocity:surface:mag)){//Start_mass - 362{//(TIME:SECONDS - LOtime) > 148 { //RTLS time Start_mass(570) - 362 = 208
 				Wait 0.1. 
-				If (ship:velocity:orbit:mag > ASDS_limit) and (sv_Stage1_dV < ship:velocity:orbit:mag){
+				If (ship:velocity:surface:mag > ASDS_limit) and (sv_Stage1_dV < ship:velocity:surface:mag){
 					Lock Throttle to 0.75.
 				}
 				If (LndMode > 1){
@@ -286,9 +275,7 @@ Until Runmode = 100 {
 					Set impact to ground_track(impactData["time"]).
 					Set Diff to hf_geoDistance(impact,target:GEOPOSITION).
 					Print"Diff: " + Diff.
-					if Diff < change {Set change to Diff.}
-					If ((Diff < 1000) or (Diff > change))and (sv_Stage1_dV < ship:velocity:orbit:mag){
-						Wait 1.
+					If Diff < 10000{
 						Break.
 					}
 				}
@@ -382,7 +369,7 @@ Until Runmode = 100 {
 			local head is mod(360 - northPole:bearing,360).
 			Set ground to ground_track(impactData["time"]).
 			Set Diff to hf_geoDistance(ground,gl_TargetLatLngBoost).
-			//Print "Diff:" + Diff.
+			Print "Diff:" + Diff.
 			if (diff > (60000)){
 				Set lastdist to 1000000.
 			}
@@ -442,10 +429,10 @@ Until Runmode = 100 {
 					break.
 				}
 			}
-			//Print head.
-			//Print ground:lng.
-			//Print gl_TargetLatLngBoost:lng.
-			//Print boost_pitch.
+			Print head.
+			Print ground:lng.
+			Print gl_TargetLatLngBoost:lng.
+			Print boost_pitch.
 			wait 0.001.
 			set vd2 to vecdraw(v(0,0,0), gl_TargetLatLngBoost:position:vec, blue, "Target", 1.0, true, 0.2).
 			set vd3 to vecdraw(v(0,0,0), SHIP:GEOPOSITION:position:vec, green, "shadow", 1.0, true, 0.2).
@@ -472,12 +459,8 @@ Until Runmode = 100 {
 		Print "Diff:" + hf_geoDistance(ground_track(impactData["time"]),gl_TargetLatLngBoost).
 		set ster TO r(up:pitch,up:yaw,facing:roll).
 		lock steering to ster.
-		If (LndMode < 2) {
-			until ship:verticalspeed < -200 {
-				wait 1.
-			}
-		} Else{
-			lock ster to -ship:velocity:surface.
+		until ship:verticalspeed < -200 {
+			wait 1.
 		}
 		Print "Re-entry prep and next safe landing point: " + (TIME:SECONDS - EngineStartTime).
 		Print hf_geoDistance(gl_TargetLatLngSafe, SHIP:GEOPOSITION).
@@ -490,7 +473,7 @@ Until Runmode = 100 {
 		//set up when the energy builds up enough to start slowing down for the entry burn, or altitude high enough to slow down and reach terminal velocity
 		Print "burn_stt: " + burn_stt.
 		until (Ship:Q > burn_stt) or (ship:altitude < burn_alt){
-			set impactData to impact_UTs(1,0).
+			set impactData to impact_UTs().
 			set impact to ground_track(impactData["time"]).
 			set vd1 to vecdraw(v(0,0,0), impact:position:vec, green, "Landing", 1.0, true, 0.25).
 			set vd2 to vecdraw(v(0,0,0), gl_TargetLatLngSafe:position:vec, blue, "Target", 1.0, true, 0.25).
@@ -505,8 +488,9 @@ Until Runmode = 100 {
 		Set SteeringManager:PITCHTORQUEADJUST to 0.01. //was 1
 		Set SteeringManager:YAWTORQUEADJUST to 0.01. //was 1
 		Set SteeringManager:ROLLTORQUEADJUST to 0.001. //was 0.1
-		set impactData to impact_UTs(1,0).
+		set impactData to impact_UTs().
 		set impact to ground_track(impactData["time"]).
+		Set impactData to impact_UTs().
 		Print "Diff:" + hf_geoDistance(ground_track(impactData["time"]),gl_TargetLatLngSafe).
 		Print "Q:"+ Ship:Q.  // 0.00814 (800Pa)
 		Lock Throttle to 1.
@@ -533,7 +517,7 @@ Until Runmode = 100 {
 		Print "Finsh Calc:" + (((ship:airspeed)^3)/ship:altitude).
 		Print "Q:"+ Ship:Q. //0.025(2.5kPa)
 		Lock throttle to 0.
-		set impactData to impact_UTs(1,0).
+		set impactData to impact_UTs().
 		set impact to ground_track(impactData["time"]).
 		Set runmode to 5.
 	}
@@ -550,62 +534,38 @@ Until Runmode = 100 {
 		lock maxDecel to abs(((ship:availablethrust / ship:mass) - g)*(sin(pitch))).	// Maximum deceleration possible (m/s^2), the sin pitch is an offset for the current angle.
 		lock stopDist to ship:verticalspeed^2 / (2 * maxDecel).		// The distance the burn will require
 		lock idealThrottle to (stopDist / (trueRadar-Stop_trim)).	// Throttle required for perfect hoverslam, the stoptrim is because we want to actually land so need to target slightly under surface
-		lock impactData to impact_UTs(1,0).
+		lock impactData to impact_UTs().
 		//lock impact to ground_track(impactData["time"]).
-		lock L_impact to Last_impact(radarOffset + grndOffset).
+		lock L_impact to Last_impact(radarOffset).
 		lock pitch to 90 - vectorangle(ship:up:forevector, ship:facing:forevector).
-		set mheading to 0.
-		set mpitch to 0.
-		lock ster to heading (srfretrogradehdg() + mheading, srfretrogradepitch() + mpitch).
+		set mheading to srfretrogradehdg().
+		set mpitch to srfretrogradepitch().
+		lock ster to heading (mheading, mpitch).//make pitch surface retrograde
 		lock steering to ster. 
 		set TimeOnTgt to 100.
 		
 		///First part of glide settings (earth rotation still counts)
-		set headingPID to PIDLOOP(0.005, 0.0001, 0.001, -10, 10).//0.01, 0.01, 0.01, -5, 5
-		set pitchPID to PIDLOOP(0.05, 0.0, 0.04, -30, 30).//30, 0.00, 0.0, -30, 30
-		set headingPID:SETPOINT to 0.
-		set pitchPID:SETPOINT to overshoot.
+		set headingPID to PIDLOOP(0.2, 0.01, 0.01, -0.1, 0.1).//0.1, 0, 0.0, -0.1, 0.1
+		set pitchPID to PIDLOOP(0.3, 0.01, 1.5, -1, 1).//0.1, 0.0, 0, -0.5, 0.5
+		until (TimeOnTgt-(impactData["time"]-time:seconds)) < 3 { //set at 3 seconds to change to different gains
+			
+			//set impact to ground_track(impactData["time"]).
+			//set L_impact to Last_impact(radarOffset, 1).
 
-		until ((TimeOnTgt-(impactData["time"]-time:seconds)) < 1) and (airspeed < 650){ //set at 3 seconds to change to different gains
-			set splitVec to getSteeringVectors(gl_TargetLatLng:ALTITUDEPOSITION(0),L_impact:ALTITUDEPOSITION(0)).
-
-			if (LndMode > 1){
-				set mheading to headingPID:UPDATE(time:seconds, splitVec["yaw"]). // heading to landing point 
-				set mpitch to pitchPID:UPDATE(time:seconds, -splitVec["pitch"]). //current surface speed compared to target arrival
-				Print "ASDS Tgt".			
-			}else{
-				set mheading to headingPID:UPDATE(time:seconds, splitVec["yaw"]). // heading to landing point 
-				set mpitch to pitchPID:UPDATE(time:seconds, -splitVec["pitch"]). //current surface speed compared to target arrival
-			}
-
-			If (LndMode > 1){
-				Set gl_TargetLatLng to target:GEOPOSITION.
-				set grndOffset to gl_TargetLatLng:TERRAINHEIGHT.//inverse if over ocean
-				Print grndOffset.
-			}
+			set targetheading to hf_mAngleInv(gl_TargetLatLng:HEADING). //heading to target
+			set headingPID:SETPOINT to targetheading.
+			set mheading to hf_mAngle(mheading + headingPID:UPDATE(time:seconds, hf_mAngle(hf_geoDir(SHIP:GEOPOSITION, L_impact)))). // heading to landing point (reversed due to retrograde)
 			Print "mheading: " + mheading.
-			Print splitVec["yaw"].
-			Print "input: " + headingPID:input.
-			Print "setpoint: " + headingPID:setpoint.
-			Print "error: " + headingPID:Error.
-			Print "change: " + headingPID:changerate.
 			Print headingPID:OUTPUT.
-			Print headingPID:Pterm.
-			Print headingPID:Iterm.
-			Print headingPID:Dterm.
 
+			set targetpitch to (impactData["time"]-time:seconds). // want slightly long
+			set pitchPID:SETPOINT to targetpitch.
 			set downrange to hf_geoDistance(SHIP:GEOPOSITION, gl_TargetLatLng).
 			Set TimeOnTgt to downrange/ship:Groundspeed.
+			set mpitch to mpitch + pitchPID:UPDATE(time:seconds, TimeOnTgt). //current surface speed compared to target arrival
+			set mpitch to min(89,max(mpitch,45)).
 			Print "mpitch: " + mpitch.
-			Print splitVec["pitch"].
-			Print "input: " + pitchPID:input.
-			Print "setpoint: " + pitchPID:setpoint.
-			Print "error: " + pitchPID:Error.
-			Print "change: " + pitchPID:changerate.
 			Print pitchPID:OUTPUT.
-			Print pitchPID:Pterm.
-			Print pitchPID:Iterm.
-			Print pitchPID:Dterm.
 
 			Print "high".
 			Print "trueRadar: " + trueRadar.
@@ -614,31 +574,28 @@ Until Runmode = 100 {
 			Print TimeOnTgt.
 			Print (impactData["time"]-time:seconds).
 			Print TimeOnTgt-(impactData["time"]-time:seconds).
-			set vd1 to 0.
-			set vd2 to vecdraw(v(0,0,0), gl_TargetLatLng:ALTITUDEPOSITION(0):vec, blue, "Target", 1.0, true, 0.2).
+			//set vd1 to vecdraw(v(0,0,0), impact:position:vec, green, "Landing", 1.0, true, 0.2).
+			set vd2 to vecdraw(v(0,0,0), gl_TargetLatLng:position:vec, blue, "Target", 1.0, true, 0.2).
 			set vd3 to vecdraw(v(0,0,0), SHIP:GEOPOSITION:position:vec, yellow, "shadow", 1.0, true, 0.2).
-			set vd4 to vecdraw(v(0,0,0), L_impact:ALTITUDEPOSITION(0):vec, red, "L_Landing", 1.0, true, 0.2).		
+			set vd4 to vecdraw(v(0,0,0), L_impact:position:vec, red, "L_Landing", 1.0, true, 0.2).		
 
 			// LOG MISSIONTIME + "," + 
 			// trueRadar + "," + 
 			// airSpeed + "," + 
-			// ship:Groundspeed + "," + 
+			// Groundspeed + "," + 
 			// verticalSpeed + "," + 
-			// pitch + "," + 
-			// downrange + "," + 
+			// pitch + downrange + "," + 
 			// ship:mass + "," + 
 			// ship:availableThrust + "," + 
 			// headingPID:SETPOINT + "," + 			
 			// headingPID:INPUT + "," + 
 			// headingPID:OUTPUT + "," + 
-			// headingPID:ERROR + "," +			
 			// headingPID:Pterm + "," + 
 			// headingPID:Iterm + "," + 
 			// headingPID:Dterm + "," + 
 			// pitchPID:SETPOINT + "," + 			
 			// pitchPID:INPUT + "," + 
 			// pitchPID:OUTPUT + "," + 
-			// pitchPID:ERROR + "," + 
 			// pitchPID:Pterm + "," + 
 			// pitchPID:Iterm + "," + 
 			// pitchPID:Dterm
@@ -653,41 +610,29 @@ Until Runmode = 100 {
 		Set AltstopDist to 1.
 		//headingPID:RESET().
 		pitchPID:RESET().
-		 
-		set headingPID to PIDLOOP(0.05, 0.01, 0.02, -10, 10). //0.05, 0.01, 0.02, -5, 5
-		set pitchPID to PIDLOOP(0.05, 0.02, 0.1, -15, 15).//5, 0.01, 0.001, -15, 15
-		set headingPID:SETPOINT to 0.
-		set pitchPID:SETPOINT to overshoot.
-
+		
+		set headingPID to PIDLOOP(0.2, 0.01, 0.2, -0.3, 0.3). //0.15, 0, 0.15, -0.2, 0.2).
+		set pitchPID to PIDLOOP(0.2, 0.001, 0.2, -1, 1).//(0.1, 0, 0.1, -1, 1).
+		
 		until (trueRadar < stopDist) and (airspeed < 550) and (trueRadar < (4000* AltstopDist) ){ 
 			//CRS-11 4.5km and 305 m/s at 07:10 mm:ss
 			If ship:mass > 36{
-				set AltstopDist to 1.35. //provide extra 35% for engine startup and control on RTLS as have extra fuel
+				set AltstopDist to 1.15. //provide extra 15% for engine startup and control on RTLS as have extra fuel
+				set overshoot to 1.5.
 			}else If (ship:mass > 34) and (ship:mass < 36){
-				set AltstopDist to 0.8. // at 35 provide less 80% for engine startup with 3 engines to use less fuel
+				set AltstopDist to 0.75. // at 34.5 provide less 75% for engine startup with 3 engines to use less fuel
+				set overshoot to 1.
 			}Else {
-				set AltstopDist to 0.4. // at 34 provide less 40% for engine startup with 3 engines to use less fuel
+				set AltstopDist to 0.65. // at 33 provide less 65% for engine startup with 3 engines to use less fuel
+				set overshoot to 0.4.
 			}
 
-			If (LndMode > 1){
-				Set gl_TargetLatLng to target:GEOPOSITION.
-				set grndOffset to gl_TargetLatLng:TERRAINHEIGHT.//inverse if over ocean
-				Print grndOffset.
-			}
-
-			set splitVec to getSteeringVectors(gl_TargetLatLng:ALTITUDEPOSITION(0),L_impact:ALTITUDEPOSITION(0)).
-
-			if (LndMode > 1){
-				set mheading to headingPID:UPDATE(time:seconds, splitVec["yaw"]). // heading to landing point 
-				set mpitch to pitchPID:UPDATE(time:seconds, -splitVec["pitch"]). //current surface speed compared to target arrival		
-				Print "ASDS Tgt".	
-			}else{
-				set mheading to headingPID:UPDATE(time:seconds, splitVec["yaw"]). // heading to landing point 
-				set mpitch to pitchPID:UPDATE(time:seconds, -splitVec["pitch"]). //current surface speed compared to target arrival
-			}
-
+			//set impact to ground_track(impactData["time"]).
+			
+			set targetheading to hf_mAngleInv(gl_TargetLatLng:HEADING). //heading to target
+			set headingPID:SETPOINT to targetheading.
+			set mheading to hf_mAngle(mheading + headingPID:UPDATE(time:seconds, hf_mAngle(hf_geoDir(SHIP:GEOPOSITION, L_impact)))). // heading to landing point (reversed due to retrograde)
 			Print "mheading: " + mheading.
-			Print splitVec["yaw"].
 			Print "input: " + headingPID:input.
 			Print "setpoint: " + headingPID:setpoint.
 			Print "error: " + headingPID:Error.
@@ -696,11 +641,15 @@ Until Runmode = 100 {
 			Print headingPID:Pterm.
 			Print headingPID:Iterm.
 			Print headingPID:Dterm.
-
+			
+			set targetpitch to (impactData["time"]-time:seconds)-overshoot. // want slightly long
+			set pitchPID:SETPOINT to targetpitch.
 			set downrange to hf_geoDistance(SHIP:GEOPOSITION, gl_TargetLatLng).
 			Set TimeOnTgt to downrange/ship:Groundspeed.
+			set mpitch to mpitch + pitchPID:UPDATE(time:seconds, TimeOnTgt). //current surface speed compared to target arrival
+			set mpitch to min(89,max(mpitch,45)).
+			//set mpitch to min(pitch+5,max(mpitch,pitch-5)). //keeps the pitch to within 5 degrees AOA.
 			Print "mpitch: " + mpitch.
-			Print splitVec["pitch"].
 			Print "input: " + pitchPID:input.
 			Print "setpoint: " + pitchPID:setpoint.
 			Print "error: " + pitchPID:Error.
@@ -709,15 +658,6 @@ Until Runmode = 100 {
 			Print pitchPID:Pterm.
 			Print pitchPID:Iterm.
 			Print pitchPID:Dterm.
-			Print gl_TargetLatLng:distance.
-
-			Print "med".
-			Print "trueRadar: " + trueRadar.
-			Print "maxDecel: " + maxDecel.
-			Print "Stop Dist: " + stopDist.
-			Print TimeOnTgt.
-			Print (impactData["time"]-time:seconds).
-			Print TimeOnTgt-(impactData["time"]-time:seconds).
 
 			Print "trueRadar: "+ trueRadar.
 			Print "maxDecel: "+ maxDecel.
@@ -733,9 +673,9 @@ Until Runmode = 100 {
 			Print TimeOnTgt-(impactData["time"]-time:seconds).
 			//Print hf_mAngleInv(gl_TargetLatLng:HEADING).
 			//set vd1 to vecdraw(v(0,0,0), impact:position:vec, green, "Landing", 1.0, true, 0.2).
-			set vd2 to vecdraw(v(0,0,0), gl_TargetLatLng:ALTITUDEPOSITION(0):vec, blue, "Target", 1.0, true, 0.2).
+			set vd2 to vecdraw(v(0,0,0), gl_TargetLatLng:position:vec, blue, "Target", 1.0, true, 0.2).
 			set vd3 to vecdraw(v(0,0,0), SHIP:GEOPOSITION:position:vec, yellow, "shadow", 1.0, true, 0.2).
-			set vd4 to vecdraw(v(0,0,0), L_impact:ALTITUDEPOSITION(0):vec, red, "L_Landing", 1.0, true, 0.2).
+			set vd4 to vecdraw(v(0,0,0), L_impact:position:vec, red, "L_Landing", 1.0, true, 0.2).
 			
 			// LOG MISSIONTIME + "," + 
 			// trueRadar + "," + 
@@ -769,93 +709,78 @@ Until Runmode = 100 {
 	}
 
 //Landing burn
-
+	//headingPID:RESET().
+	pitchPID:RESET().
+	set headingPID to PIDLOOP(0.3, 0.01, 0.2, -0.5, 0.5).//0.3, 0, 0.15, -0.3, 0.3
+	set pitchPID to PIDLOOP(0.3, 0.01, 0.2, -1, 1).//0.1, 0, 0.05, -1, 1
 	if runmode = 6{
-		lock L_impact to Last_impact(radarOffset + grndOffset).
+		lock L_impact to Last_impact(radarOffset, 0.8).
+		lock impactData to impact_UTs().
 		Global throt_lim is 0.9.
 		Print "Booster landing burn:"+ (TIME:SECONDS - EngineStartTime).
 
-		//headingPID:RESET().
-		pitchPID:RESET().
-		set headingPID to PIDLOOP(0.05, 0.01, 0.01, -5, 5).//0.9, 0.01, 0.02, -5, 5
-		set pitchPID to PIDLOOP(0.25, 0.015, 0.015, -15, 15).//3, 0.01, 0.05, -15, 15
-		set headingPID:SETPOINT to 0.
-		set pitchPID:SETPOINT to overshoot.
-		set counter to 0.
-		set fullthrust to 0.
-
-		lock AoA to VANG(SHIP:FACING:FOREVECTOR,VXCL(SHIP:FACING:STARVECTOR,-SHIP:VELOCITY:SURFACE)).
-
 		until (0 > trueRadar) or (Ship:Status = "LANDED") or (ship:verticalspeed > 0) {
-			Set faltm to hf_Fall(radarOffset + grndOffset).
+			Set faltm to hf_Fall(radarOffset).
 			lock Throttle to min(max(0.1,idealThrottle),throt_lim).//ensure engine does not turn off
-	
-			set splitVec to getSteeringVectors(gl_TargetLatLng:ALTITUDEPOSITION(0), L_impact:ALTITUDEPOSITION(0)).
-			If (airspeed < 350) and counter = 0{
-				//set pitchPID:kp to 0.4.// increase as the distance should be smaller
-				set counter to 1.
-			}
-			If (airspeed < 150) and counter = 1{
-				//set pitchPID:kp to 0.5.// increase as the distance should be smaller
-				set pitchPID:SETPOINT to 0.
-				set counter to 2.
-			}
-			If (airspeed < 150){ // reverse steering inputs and engine is main controller (250)
-				set mheading to headingPID:UPDATE(time:seconds, -splitVec["yaw"]). // heading to landing point 
-				set mpitch to pitchPID:UPDATE(time:seconds, splitVec["pitch"]). //current surface speed compared to target arrival
-				Print "Engine Main".
-			}else if (fullthrust = 1){ // reverse steering inputs and engine is main controller  
-				set mheading to headingPID:UPDATE(time:seconds, -splitVec["yaw"]). // heading to landing point 
-				set mpitch to pitchPID:UPDATE(time:seconds, splitVec["pitch"]). //current surface speed compared to target arrival
-				set pitchPID:kp to 0.1.// decrease due to stronger counterforce
-				Print "Tripple Engine".
-			}else{
-				set mheading to headingPID:UPDATE(time:seconds, splitVec["yaw"]). // heading to landing point 
-				set mpitch to pitchPID:UPDATE(time:seconds, -splitVec["pitch"])*min(1, sqrt(AOA)*ship:Q). //current surface speed compared to target arrival
-			}
-
-			Print "mheading: " + mheading.
-			Print splitVec["yaw"].
-			Print "input: " + headingPID:input.
-			Print "setpoint: " + headingPID:setpoint.
-			Print "error: " + headingPID:Error.
-			Print "change: " + headingPID:changerate.
-			Print headingPID:OUTPUT.
-			Print headingPID:Pterm.
-			Print headingPID:Iterm.
-			Print headingPID:Dterm.
-
-			set downrange to hf_geoDistance(SHIP:GEOPOSITION, gl_TargetLatLng).
-			Set TimeOnTgt to downrange/ship:Groundspeed.
-
-			Print "mpitch: " + mpitch.
-			Print min(1, sqrt(AOA)*ship:Q).
-			Print splitVec["pitch"].
-			Print "input: " + pitchPID:input.
-			Print "setpoint: " + pitchPID:setpoint.
-			Print "error: " + pitchPID:Error.
-			Print "change: " + pitchPID:changerate.
-			Print pitchPID:OUTPUT.
-			Print pitchPID:Pterm.
-			Print pitchPID:Iterm.
-			Print pitchPID:Dterm.
-			Print gl_TargetLatLng:distance.
+			//local mapGeo is ff_GeoConv (mapDist/1000, sv_intAzimith, gl_TargetLatLng:lat, gl_TargetLatLng:lng).
 			
-			If (idealThrottle > 1.3) and ((Ship:Q <0.5) or (faltm["fallTime"] < 6)) and (trueRadar > (200 + grndOffset)){
+			//set impact to ground_track(impactData["time"]).
+			
+			set targetheading to hf_mAngleInv(gl_TargetLatLng:HEADING). //heading to target
+			//Set BurnAdjust to impactData["time"]*(ship:Groundspeed/2)/1000. //allowance for retrograde slow down
+			//Print "BurnAdj"+ BurnAdjust.
+			//set impact to ff_GeoConv(BurnAdjust, targetheading, impact:lat, impact:lng). //km, deg 0-360, deg-180+180, deg-90+90 new impact point with slowdown burn adjust ment
+
+			set headingPID:SETPOINT to targetheading.
+			set mheading to hf_mAngle(mheading + headingPID:UPDATE(time:seconds, hf_mAngle(hf_geoDir(SHIP:GEOPOSITION, L_impact)))). // heading to landing point (reversed due to retrograde)
+			// Print "mheading: " + mheading.
+			// Print "mheading: " + mheading.
+			// Print "input: " + headingPID:input.
+			// Print "setpoint: " + headingPID:setpoint.
+			// Print "error: " + headingPID:Error.
+			// Print "change: " + headingPID:changerate.
+			// Print headingPID:OUTPUT.
+			// Print headingPID:Pterm.
+			// Print headingPID:Iterm.
+			// Print headingPID:Dterm.
+
+
+			set targetpitch to (impactData["time"]-time:seconds)-(overshoot/1.2). //
+			set pitchPID:SETPOINT to targetpitch.
+			set downrange to hf_geoDistance(SHIP:GEOPOSITION, L_impact).//gl_TargetLatLng
+			Set TimeOnTgt to downrange/ship:Groundspeed.
+			set mpitch to mpitch + pitchPID:UPDATE(time:seconds, TimeOnTgt). //current surface speed compared to target arrival
+			set mpitch to min(89,max(mpitch,50)).
+			// Print "mpitch: " + mpitch.
+			// Print "input: " + pitchPID:input.
+			// Print "setpoint: " + pitchPID:setpoint.
+			// Print "error: " + pitchPID:Error.
+			// Print "change: " + pitchPID:changerate.
+			// Print pitchPID:OUTPUT.
+			// Print pitchPID:Pterm.
+			// Print pitchPID:Iterm.
+			// Print pitchPID:Dterm.
+			
+			
+			If (idealThrottle > 1.25) and ((Ship:Q <0.4) or (faltm["fallTime"] < 6)) and (trueRadar > (200 + grndOffset)){
 				//start outter engines
 				ff_outter_engine_A().
 				Print "outter engines start".
 				ff_outter_engine_A().
 				set throttle to 1. //needs to be one to start outter engines.
-				set fullthrust to 1.
 				wait 1.0.//ensures engines actually start
 			}
+			If (LndMode < 2){
+				//do nothing keep existing target
+			}Else{
+				set gl_TargetLatLng to target:GEOPOSITION. // ASDS Landing Pad Coords
+			}
 
-			If (trueRadar > (1500)){
+			If (trueRadar > (1500 + grndOffset)){
 				//local dist is hf_geoDistance(ground_track(impactData["time"]),gl_TargetLatLng).
 				Set throt_lim to (idealThrottle*0.9).
 				Print "Limited".
-			} Else	If (trueRadar < (1500)) { // under 1500m full throttle range
+			} Else	If (trueRadar < (1500 + grndOffset)) { // under 1500m full throttle range
 				Set throt_lim to 1.
 				Print "unlimited".
 			}
@@ -863,7 +788,7 @@ Until Runmode = 100 {
 				Gear on.
 			}
 			if ((faltm["fallTime"]/sin(pitch) < 3) and (faltm["fallTime"]/sin(pitch) > 2) ) or ((trueRadar < 300) and (trueRadar > 25)) { //cancel out ground speed when within 4 secons
-				lock steering to heading(srfretrogradehdg() + mheading, srfretrogradepitch()).//make pitch surface retrograde
+				lock steering to heading(mheading, srfretrogradepitch()).//make pitch surface retrograde
 				Print "Locked retro pitch".
 			} 
 			if ((faltm["fallTime"]/sin(pitch) < 2) and trueRadar > 25) or ((trueRadar > 25) and (trueRadar < 100)){ //cancel out ground speed when under 2 seconds of touchdown
@@ -877,16 +802,15 @@ Until Runmode = 100 {
 			if (idealThrottle > 0.2) and (idealThrottle < 0.4){
 				Set throt_lim to 0.75.
 			}
-			if idealThrottle < 0.2{
+			if idealThrottle < 0.25{
 				ff_outter_engine_S().
 				Set throt_lim to 1.
-				set fullthrust to 0.
-				Print "outter shutdown".
+				Print "outter shudown".
 			}
-			//set vd1 to vecdraw(v(0,0,0), impact:position:vec, green, "Landing", 1.0, true, 0.2).
-			set vd2 to vecdraw(v(0,0,0), gl_TargetLatLng:ALTITUDEPOSITION(0):vec, blue, "Target", 1.0, true, 0.2).
+			set vd1 to vecdraw(v(0,0,0), impact:position:vec, green, "Landing", 1.0, true, 0.2).
+			set vd2 to vecdraw(v(0,0,0), gl_TargetLatLng:position:vec, blue, "Target", 1.0, true, 0.2).
 			set vd3 to vecdraw(v(0,0,0), SHIP:GEOPOSITION:position:vec, yellow, "shadow", 1.0, true, 0.2).
-			set vd4 to vecdraw(v(0,0,0), L_impact:ALTITUDEPOSITION(0):vec, red, "L_Landing", 1.0, true, 0.2).
+			set vd4 to vecdraw(v(0,0,0), L_impact:position:vec, red, "L_Landing", 1.0, true, 0.2).
 			Print "trueRadar: "+trueRadar.
 			Print "maxDecel: "+maxDecel.
 			Print "stopDist "+stopDist.
@@ -899,34 +823,8 @@ Until Runmode = 100 {
 			Print "Groundspeed" + ship:Groundspeed.
 			Print "Ground prop" +(verticalspeed / ship:Groundspeed).
 			Print "Downrange: " + downrange.
-			Print gl_TargetLatLng:distance.
 			
-			// LOG MISSIONTIME + "," + 
-			// trueRadar + "," + 
-			// airSpeed + "," + 
-			// ship:Groundspeed + "," + 
-			// verticalSpeed + "," + 
-			// pitch + "," + 
-			// downrange + "," + 
-			// ship:mass + "," + 
-			// ship:availableThrust + "," + 
-			// headingPID:SETPOINT + "," + 			
-			// headingPID:INPUT + "," + 
-			// headingPID:OUTPUT + "," + 
-			// headingPID:ERROR + "," +			
-			// headingPID:Pterm + "," + 
-			// headingPID:Iterm + "," + 
-			// headingPID:Dterm + "," + 
-			// pitchPID:SETPOINT + "," + 			
-			// pitchPID:INPUT + "," + 
-			// pitchPID:OUTPUT + "," + 
-			// pitchPID:ERROR + "," + 
-			// pitchPID:Pterm + "," + 
-			// pitchPID:Iterm + "," + 
-			// pitchPID:Dterm
-			// TO "0:/dataoutput.csv".
-
-			wait 0.01.
+			wait 0.1.
 		}
 		Lock throttle to 0.	
 		Set runmode to 7.
@@ -937,9 +835,12 @@ Until Runmode = 100 {
 	Shutdown. //ends the script
 }
 
+
 //////////////////////////////////////////////////////////////////////////
 ///////////////////////FUNCTIONS
 ///////////////////////////////////////////////////////////////////////////
+
+
 
 function hf_geoDistance { //Approx in meters using straight line. Good for flat surface approximatation and low computation. Does not take into accout curvature or lattitude.
 	parameter geo1.
@@ -1011,7 +912,7 @@ function ff_quadraticPlus {
 }
 
 FUNCTION impact_UTs {//returns the UTs of the ship's impact, NOTE: only works for non hyperbolic orbits
-	PARAMETER minError IS 1, sealevel is -100000.
+	PARAMETER minError IS 1.
 	IF NOT (DEFINED impact_UTs_impactHeight) { GLOBAL impact_UTs_impactHeight IS 0. }
 	LOCAL startTime IS TIME:SECONDS.
 	LOCAL craftOrbit IS SHIP:ORBIT.
@@ -1024,7 +925,7 @@ FUNCTION impact_UTs {//returns the UTs of the ship's impact, NOTE: only works fo
 	LOCAL Alt_TA is alt_to_ta(sma,ecc,SHIP:BODY,MAX(MIN(impact_UTs_impactHeight,(ap - 1)),(pe + 1)))[1].
 	LOCAL impactUTs IS startTime + time_betwene_two_ta(ecc,orbitPeriod,craftTA,Alt_TA).
 	//Print "impactUTs:" + impactUTs.
-	LOCAL newImpactHeight IS max(ground_track(impactUTs):TERRAINHEIGHT, sealevel).
+	LOCAL newImpactHeight IS ground_track(impactUTs):TERRAINHEIGHT.
 	SET impact_UTs_impactHeight TO (impact_UTs_impactHeight + newImpactHeight) / 2.
 	RETURN LEX("time",impactUTs,//the UTs of the ship's impact
 	"impactHeight",impact_UTs_impactHeight,//the aprox altitude of the ship's impact
@@ -1068,44 +969,6 @@ FUNCTION ground_track {	//returns the geocoordinates of the ship at a given time
 	IF newLNG < - 180 { SET newLNG TO newLNG + 360. }
 	IF newLNG > 180 { SET newLNG TO newLNG - 360. }
 	RETURN LATLNG(posLATLNG:LAT,newLNG).
-}
-
-function getSteeringVectors {
-	Parameter tgt, impact. // provided in position format
-
-	local ImpactVector is (SHIP:POSITION - impact). //in 3D
-    local tgtVector is (SHIP:POSITION - tgt). // in 3D
-	local gndtgtVector is vxcl(SHIP:UP:Vector, tgtVector). //in Ground plane only
-	local gndImpactVector is vxcl(SHIP:UP:Vector, ImpactVector). //in Ground plane only
-
-	Set vec_yaw to vxcl (gndtgtVector,gndImpactVector).//yaw perpendicular to ground (points in ground plane)
-
-	local vertImpactVector is vxcl(vec_yaw, ImpactVector). //in vertical plane only
-	local verttgtVector is vxcl(vec_yaw, tgtVector). //in vertical plane only
-	
-	set ang_pitch to vertImpactVector:mag - verttgtVector:mag.
-	Print "vert".
-	Print vertImpactVector:mag.
-	Print verttgtVector:mag.
-
-	set ang_yaw to -vec_yaw:mag.
-
-	set upwards to ship:up:vector. //skyward
-	set forewards to ship:facing:vector. //fore pointing direction of the nose
-	set righthor to vcrs(upwards,forewards). //right horizons
-	
-	//set vd5 to vecdraw(v(0,0,0), righthor*1000, red, "righthor", 1.0, true, 0.2).
-	set vd6 to vecdraw(v(0,0,0), vec_yaw, green, "vec_yaw", 1.0, true, 0.2).
-
-	if VANG(righthor,vec_yaw) < 45{
-		set ang_yaw to -ang_yaw.	
-	}
-	
-	local arr is lexicon().
-	arr:add ("yaw", ang_yaw).
-	arr:add ("pitch", ang_pitch).
-	
-	Return(arr).
 }
 
 function getSteeringBoost {
@@ -1293,6 +1156,177 @@ function ff_outter_engine_S{
 
 
 
+FUNCTION ff_main {
+	print "Landing guidance script loaded".
+	wait until ship:name = "Falcon 9 Debris".
+	clearscreen.
+	set info to "Landing guidance script enabled".
+	set runmode tO "RELEASING SECOND STAGE".
+	wait 8.		
+	
+	set body_circumference to 2 * constant:pi * body:radius.
+	set gravity_acceleration to constant:G * body:mass / (body:radius)^2.
+	
+	set targetcoordinates to LATLNG(28.608434,-80.58609). //LZ-1
+	
+	lock srfdisterror to dgtom(targetcoordinates:lat,targetcoordinates:lng,impactcoordinates():lat,impactcoordinates():lng).
+	
+	set MerlinSLthrust to 845. //thrust of a single Melin 1D++ engine at sea level in (kN)
+	
+	set burndist1 to -1.
+	set masterpitch to -1.
+	set masterhead to -1.
+	set telemetry to true.
+	
+	lock pitch to 90 - vectorangle(ship:up:forevector, ship:facing:forevector). //navball pitch (read only)
+	set northPole to latlng(90,0).
+	//lock head to mod(360 - northPole:bearing,360). //navball heading (read only)
+	set shipheight to 45.
+	lock truealt to ship:altitude - targetcoordinates:terrainheight - shipheight. //sbsolute altitude (read only)
+	
+	lock steering to heading(masterhead,masterpitch).	
+	set thrott to 0.
+	lock throttle to thrott.
+
+	when(telemetry) then {
+		printtelemetry(0.1).
+		preserve.
+	}
+	
+	boostback().
+	coastphase().
+	entryburn().
+	descentguidance().
+	landing().
+}
+
+FUNCTION ff_entryburn {	
+	set runmode to "ENTRYBURN".	
+	set info to "Entry burn start".
+	set thrott to 1.
+	
+	until (machnumber() < 3) {
+		//HEADING CONTROL		
+		set distlat to dglattom(impactcoordinates():lat - targetcoordinates:lat).
+		set distlng to dglngtom(impactcoordinates():lng - targetcoordinates:lng, targetcoordinates:lat).
+		
+		set alpha to arctan(distlat/distlng).
+		
+		if(impactcoordinates():lat > targetcoordinates:lat) {
+			if(impactcoordinates():lng < targetcoordinates:lng) {
+				set targethead to 270 + alpha.
+			} else {
+				set targethead to 90 - alpha.
+			}
+		} else {
+			if(impactcoordinates():lng < targetcoordinates:lng) {
+				set targethead to 270 - alpha.
+			} else {
+				set targethead to 90 + alpha.
+			}
+		}
+		set targethead to targethead + 180.
+		
+		//PITCH CONTROL
+		set srfdist1 to srfdisterror.
+		wait 0.01.
+		set srfdist2 to srfdisterror.
+		
+		if(srfdist2 > 150) {
+			set targetpitch to 75.
+		} else {
+			set approachspeed to (srfdist1 - srfdist2)/0.01.
+			set timetotarget to srfdist2/approachspeed.
+			set impacttime to abs(truealt/ship:verticalspeed).			
+			if(timetotarget < impacttime - 5) {
+				set targetpitch to targetpitch - 0.2.
+			} else {
+				set targetpitch to targetpitch + 0.2.
+			}
+		}
+		
+		set targetpitch to max(75,min(targetpitch,90)).
+		
+		//BURN DISTANCE CALCULATION
+		if(machnumber() < 1) {
+			set enginespullupdistance to  - ship:verticalspeed * 2.5.
+			set burndist1 to ship:velocity:surface:mag^2 / (2 * (MerlinSLthrust/ship:mass - gravity_acceleration)) + enginespullupdistance.	
+		}
+		
+		//OUTPUT
+		set masterhead to mod(targethead,360).
+		set masterpitch to targetpitch.
+	}
+	
+	set thrott to 0.
+	set info to "Entry burn shutdown".
+}
+
+FUNCTION ff_descentguidance {
+	set runmode to "DESCENT GUIDANCE".
+	reset_controls().
+	RCS on.	
+	
+	lock steering to heading(masterhead,masterpitch).
+		
+	until (truealt < burndist1) {
+		if(machnumber() >= 0.8) {
+			set masterhead to srfretrogradehdg().
+			set masterpitch to srfretrogradepitch().
+		} else {
+			//HEADING CONTROL		
+			set distlat to dglattom(impactcoordinates():lat - targetcoordinates:lat).
+			set distlng to dglngtom(impactcoordinates():lng - targetcoordinates:lng, targetcoordinates:lat).
+			
+			set alpha to arctan(distlat/distlng).
+			
+			if(impactcoordinates():lat > targetcoordinates:lat) {
+				if(impactcoordinates():lng < targetcoordinates:lng) {
+					set targethead to 270 + alpha.
+				} else {
+					set targethead to 90 - alpha.
+				}
+			} else {
+				if(impactcoordinates():lng < targetcoordinates:lng) {
+					set targethead to 270 - alpha.
+				} else {
+					set targethead to 90 + alpha.
+				}
+			}
+			
+			//PITCH CONTROL
+			set srfdist1 to srfdisterror.
+			wait 0.01.
+			set srfdist2 to srfdisterror.
+			
+			if(srfdist2 > 150) {
+				set targetpitch to 60.
+			} else {
+				set approachspeed to (srfdist1 - srfdist2)/0.01.
+				set timetotarget to srfdist2/approachspeed.
+				set impacttime to abs(truealt/ship:verticalspeed).			
+				if(timetotarget < impacttime - 5) {
+					set targetpitch to targetpitch - 0.2.
+				} else {
+					set targetpitch to targetpitch + 0.2.
+				}
+			}
+			
+			set targetpitch to max(75 - srfretrogradepitch(),min(targetpitch,90)).
+			
+			//BURN DISTANCE CALCULATION
+			if(machnumber() < 1) {
+				set enginespullupdistance to  - ship:verticalspeed * 2.5.
+				set burndist1 to ship:velocity:surface:mag^2 / (2 * (MerlinSLthrust/ship:mass - gravity_acceleration)) + enginespullupdistance.	
+			}
+			
+			//OUTPUT
+			set masterhead to mod(targethead,360).
+			set masterpitch to targetpitch.
+		}
+		wait 0.1.
+	}	
+}
 
 FUNCTION ff_landing {
 	set runmode to "LANDING".
@@ -1406,6 +1440,7 @@ FUNCTION dglngtom {
 
 FUNCTION dglattom {
 	PARAMETER lat.
+	
 	return abs(body_circumference * lat / 360).
 }
 
@@ -1427,8 +1462,11 @@ FUNCTION impactcoordinates {
 }
 
 
+
+
 FUNCTION srfretrogradepitch {
 	set progradepitch to 90 - vectorangle(ship:up:vector, ship:velocity:surface).
+
 	return -progradepitch.
 }
 
