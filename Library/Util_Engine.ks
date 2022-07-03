@@ -55,7 +55,7 @@ FUNCTION ff_FLAMEOUT {
 	}
 	
 	If Ullage = "boost"{ //i.e strap on solids or other boosters around a main engine that continues to burn so no ullage required
-	Print "Boost Flameout".
+	//Print "Boost Flameout".
 		///The following determiines the number of engines in the current stage that are flamed out.
 		LIST engines IN engList.
 		FOR eng IN engList {  //Loops through Engines in the Vessel
@@ -82,7 +82,7 @@ FUNCTION ff_FLAMEOUT {
 	}
 	
 	If Ullage = "hot"{ /// ie. Doing a hot stage
-	Print "Hot Flameout".
+	//Print "Hot Flameout".
 		///The following determiines the number of engines in the current stage that are flamed out.
 		//Print "dv:" + ff_stage_delta_v(ResFrac).
 		local timeRem is ff_burn_time(ff_stage_delta_v(ResFrac)).
@@ -97,7 +97,7 @@ FUNCTION ff_FLAMEOUT {
 	}
 	
 	If Ullage = "half"{ /// ie. Doing a half stage like Atlas which is based on time
-	Print "Half Flameout".
+	//Print "Half Flameout".
 		///The following determiines the number of engines in the current stage that are flamed out.
 		local timeRem is ff_burn_time(ff_stage_delta_v(ResFrac)).
 		If stageWait > timeRem{ //Stage wait is actually the amount of burn time left in the tanks before stating the half staging
@@ -108,13 +108,15 @@ FUNCTION ff_FLAMEOUT {
 	}
 	
 	If Ullage = "fuel"{ /// ie. Doing a stage dependant on fuel remainng for boosters like falcon 9
-	Print "fuel Flameout".
+	//Print "fuel Flameout".
 		If ResFrac > 0 {
 		/// the following determines the lowest fraction of fuel remaining in the current staged engines tanks.
 			local lowCap is 1.
 			for res IN Stage:Resources{
-				local cap is res:Amount/res:Capacity. // get the proportion of fuel left in the tank
-				set lowCap to min(cap, lowCap). // if the amount is lower set it to the new low capacity value
+				if (res:Capacity > 0) and (res:Amount > 0){ // check it is not empty
+					local cap is res:Amount/res:Capacity. // get the proportion of fuel left in the tank
+					set lowCap to min(cap, lowCap). // if the amount is lower set it to the new low capacity value
+				}
 			}
 			If ResFrac > lowCap{
 			//the remaing fraction of fule has dropped blow the staging trigger point
@@ -127,6 +129,27 @@ FUNCTION ff_FLAMEOUT {
 			}
 		}
 	}
+	If Ullage = "fuelnostage"{ /// ie. Doing a stage dependant on fuel with no actual staging (eg. just an engine shutdown)
+	//Print "fuel no stage Flameout".
+		If ResFrac > 0 {
+		/// the following determines the lowest fraction of fuel remaining in the current staged engines tanks.
+			local lowCap is 1.
+			for res IN Stage:Resources{
+				if (res:Capacity > 0) and (res:Amount > 0){ // check it is not empty
+					local cap is res:Amount/res:Capacity. // get the proportion of fuel left in the tank
+					set lowCap to min(cap, lowCap). // if the amount is lower set it to the new low capacity value
+					//Print lowCap.
+				}
+			}
+			If ResFrac > lowCap{
+			//the remaing fraction of fuel has dropped blow the staging trigger point
+				//TODO: insert code regarding deactivating the engines at this point instead of staging for craft like falcon 9. The below code is for staging active engines only (like ATLAS Stage and a half)
+				PRINT "Fuel no stage".
+				Set flameout to True.
+			}
+		}
+	}
+
 	Return flameout.
 } // End of Function
 	

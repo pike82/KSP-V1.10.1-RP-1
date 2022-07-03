@@ -93,7 +93,7 @@ Function ff_liftoffclimb{
 	Wait UNTIL ALT:RADAR > ClearanceHeight + LchAlt.
 	LOCK STEERING TO HEADING(intAzimith, 90).
 	Wait UNTIL SHIP:Q > 0.015. //Ensure past clearance height and airspeed 0.015 equates to approx 50m/s or 1.5kpa which is high enough to ensure aero stability for most craft small pitching	
-	PRINT "Starting Pitchover" + MissionTime.
+	PRINT "Starting Pitchover " + MissionTime.
 	LOCK STEERING TO HEADING(intAzimith, anglePitchover). //move to pitchover angle
 	WAIT 10. //allows pitchover to stabilise
 }// End of Function
@@ -158,8 +158,12 @@ Function ff_CoastT{ // // intended to keep a low AoA when coasting until a set t
 
 //Dependant Libraries
 // Util_Vessels
-// Util_Engines
+// Util_Engines 
 
+//An empty function to allow functions to be passed into ff_Orbit Steer
+function hf_empty{}
+
+//TOODO: pass in functions that can be run
 function ff_Orbit_Steer{
 	Parameter 
 	Stages,
@@ -185,8 +189,21 @@ function ff_Orbit_Steer{
 	mass_flow1 is 0, //estimated mass flow
 	s_Ve1 is 1, //estimated exhuast vel (do not make 0)
 	tau1 is 1, //(S-Ve/avg_acc) estimated effective time to burn all propellant
-// shoutdown offset for engine thrusts
-	s_vx_offset is 0.
+// shutdown offset for engine thrusts
+	s_vx_offset is 0,
+//  functions to be run at various stages
+	Funct1 is hf_empty@,
+	Funct2 is hf_empty@,
+	Funct3 is hf_empty@, 
+
+ 	A3 is 0, 
+    B3 is 0, 
+
+    A2 is 0, 
+    B2 is 0, 
+
+	A1 is 0,
+    B1 is 0. 
 
 // determine T intial paramenters based on the number of stages.
 	If Stages < 2{
@@ -200,17 +217,6 @@ function ff_Orbit_Steer{
 	local Thrust3 is s_Ve3 * mass_flow3.
 
 //starting peg variables
-    local A1 is -0.3.
-    local B1 is 0. 
-    local C1 is 0.1. 
-
-    local A2 is -0.15. 
-    local B2 is 0. 
-    local C2 is 0.1.
-
-	local A3 is 0. 
-    local B3 is 0. 
-    local C3 is 0.1. 
 
     local converged is 0. // used by convergence checker
 	Local int_pitch is 90 - VANG(SHIP:UP:VECTOR, SHIP:VELOCITY:ORBIT). //locked picth prior to convergence.
@@ -256,8 +262,10 @@ function ff_Orbit_Steer{
 	Print "PEG Values set up".
 	Print ship:mass.
 	Print ship:drymass.
-	SET STEERINGMANAGER:MAXSTOPPINGTIME TO 1.//can adjust for strenth/speed of changes to steeering control
+	//SET STEERINGMANAGER:MAXSTOPPINGTIME TO 1.//can adjust for strenth/speed of changes to steeering control
 
+	//Run first function before the PEG starts
+	Funct1().
 
     local rTcur is MISSIONTIME. //Bound KOS time since CPU launch.
 	local last is MISSIONTIME.
@@ -290,13 +298,16 @@ function ff_Orbit_Steer{
 	//Line 6: T
 	//Line 7: Pitch
 	Print "tau unlocked" AT (0,3).
+
     until false {
+		//KUniverse:PAUSE().//used for debuging
 
 		if (SHIP:Q < 0.005) and (fairlock = false) {
 			ff_Fairing().
 			Print "Fairings Delpolyed: " + MISSIONTIME AT (0,1).
 			set fairlock to true.
 		}
+
 		//Collect updated time periods
         set rTcur to MISSIONTIME.
 		Set DeltaM to rTcur - LastM. // time since last major (outside) calc loop
@@ -356,6 +367,10 @@ function ff_Orbit_Steer{
 			set s_Ve3 to s_ve.
 			set tau3 to tau.
 		}
+
+		//Run second function before thrust check
+		Funct2().
+
 		// Print "AVAILABLETHRUST:" +AVAILABLETHRUST.//DEBUG
 		if (AVAILABLETHRUST < 5) {
 			Stage.// release
@@ -375,7 +390,10 @@ function ff_Orbit_Steer{
 			set s_acc to ship:AVAILABLETHRUST/ship:mass.//needs to be reset from remainder of loop
 			//SET STEERINGMANAGER:MAXSTOPPINGTIME TO 1.
 		}
-
+		
+		//Run third function before HSL
+		Funct3().
+		
 		//cutoff process
 		if  (T3 < HSL) and (tau_lock = true) and (T2 = 0){
 			Until false{
@@ -400,13 +418,15 @@ function ff_Orbit_Steer{
 		
 		//////////PEG Minor loop//////////////////////
     	If (delta >= peg_step) and (tau_lock = false){  // this is used to ensure a minimum time step occurs before undertaking the next peg cycle calculations
+			//KUniverse:PAUSE().//used for debuging
+
 			Set last to MISSIONTIME.//reset major calculation loop
 			/// determine peg states
+
 			local peg_solved is hf_PEG(A1, B1, T1, rT1, hT1, w_T1, s_ve1, tau1, tgt_vy, tgt_vx, tgt_r, tgt_w, mass_flow1,  
 										A2, B2, T2, rT2, hT2, w_T2, s_ve2, tau2, start_mass2, mass_flow2, Thrust2,
 										A3, B3, T3, rT3, hT3, w_T3, s_ve3, tau3, start_mass3, mass_flow3, Thrust3,
 										dA1, dA2, dB1, dB2).
-
 			set A1 to peg_solved[0].
 			set B1 to peg_solved[1].
 			set T1_new to peg_solved[2].
@@ -464,6 +484,7 @@ function ff_Orbit_Steer{
 				set B to B2.
 				Print "T2 PEG Loop" AT (0,5).
 			}
+
 			if T3> 0 and (T2 = 0){
 
 				if(T3_new <= HSL) and (Converged = 1){ // below this the solution starts to become very sensitive and A and B should not longer be re-calculated but fixed until insertion
@@ -484,13 +505,13 @@ function ff_Orbit_Steer{
 			}			
 		}
 
+		// Print A. //DEBUG
+		// Print B. //DEBUG
+		// Print C. //DEBUG
+		// Print w. //DEBUG
+		// Print s_acc. //DEBUG
+		// Print peg_step. //DEBUG
 
-		//Print A. //DEBUG
-		//Print B. //DEBUG
-		//Print C. //DEBUG
-		//Print w. //DEBUG
-		//Print s_acc. //DEBUG
-		//Print peg_step. //DEBUG
 		If loop_break = true {
 			Break.// exit loop
 		}
@@ -655,12 +676,13 @@ function hf_PEG {
 	// Print "A3: " + A3.
 	// Print "B3: " + B3.
 	// Print "rT3: " + rT3.
+	// Print "s_ve3: " + s_ve3.
+	// Print "tau3: " + tau3.
 	// Print "Height: "+ (rT1 - body:radius).
 	// Print "(s_vy*T1)" + (s_vy*T1).
 	// Print "(cc01 * A1)" + (cc01 * A1).
 	// Print "(cc11*B1)" + (cc11*B1).
 	// Print "combined: " + ((s_vy*T1)+(cc01 * A1)+(cc11*B1)).
-
 
 	//get future stage parameters
 	//T3 parameters
@@ -688,10 +710,6 @@ function hf_PEG {
 	//Print "rdotT3: "+rdotT3.
 	//Print "rT3: "+ rT3.
 
-	//apply boundaries on results
-	//if rT3 > tgt_r{ Set rT3 to tgt_r.}
-	//if rT3 < rT2 {Set rT3 to rT2.}
-
 	Local L6 is hf_end_cond(w_T2, rT2, s_acc_3, w_T3, rT3, s_acc_end_3, T3, A3, B3). 
 	local ft_3 is L6[0].
 	local ftdot_3 is L6[1].
@@ -712,11 +730,12 @@ function hf_PEG {
 
 	set mean_r to (rT3 + rT2)/2.
 	local dv_T3 is dh_T3/mean_r.
-	if (dv_T3 < 5) and (T1 > 0) {Set dv_T3 to 5.}
+	//Constrain T3 outputs
+	if (dv_T3 < 5) and (T1 > 0) {Set dv_T3 to 5.} //prevent small dv_T3 which will cause errors
+	if (dv_T3 > tau3) {Set dv_T3 to (tau3).} //prevent a big dv_T3 beyond Tau3 which is impossible and will cause errors  
 	Set T3 to tau3*(1 - constant:e ^ (-dv_T3/s_ve3)).
-
 	if T3 <0 {Set T3 to 2.}
-	//Print "dv gain T2 to Orbit: " + dv_T3.
+	//Print "dv gain T3 to Orbit: " + dv_T3.
 
 	//T2 parameters
 	set s_acc_2 to Thrust2/start_mass2.
@@ -727,19 +746,16 @@ function hf_PEG {
 	set rdotT2 to rdotT2 + (bb02+bb01)*A.
 	set rdotT2 to rdotT2 + ( (bb12 + (bb02*T1)) + (bb11 + (bb01*0)) )*B.   //vertical speed at staging
 	set rdotT2 to rdotT2 + ((bb02*dA1) + (bb02*T1*0) + (bb12*dB1)) + ((bb01*0) + (bb01*0*0) + (bb11*0)).
-	//Print "Calc rdotT2 check " + rdotT2.
 	
 	//J=3 l=2, k=1, i=0
+	//Print "s_r: "+ s_r.
 	set rT2 to s_r + (s_vy*(T1+T2)). 
 	set rT2 to rT2 + ( (cc02 + (T2*bb01)) + (cc01 + (T1*0)) )*A.
 	set rT2 to rT2 + ( cc12 + cc11 + (cc02*T1 + bb11*T2 + bb01*T2*0) + (cc01*0 + 0*T1 + 0*T1*0)  )*B.
 	set rT2 to rT2 + ( (cc02*dA1) + (cc12*dB1) + (cc01*0) + (cc11*0)  ).
 	set rT2 to rT2 + (bb01*T2*0 + bb01*0*T2*0 + bb11*T2*0 + cc02*T1*0).
+	// Print "RT2: "+ rT2.  DEBUG Check if correct height units have been used
 	//Print "Calc RT2 check " + rT2.
-
-	//apply boundaries on results
-	//if rT2 > tgt_r{ Set rT2 to tgt_r.}
-	//if rT2 < rT1 { Set rT2 to rT1.}
 
 	Local L5 is hf_end_cond(w_T1, rT1, s_acc_2, w_T2, rT2, s_acc_end_2, T2, A2, B2). 
 	local ft_2 is L5[0].
@@ -748,19 +764,6 @@ function hf_PEG {
 	local dh_T2 to ((rT1 + rT2)/2)*( (ft_2*bb02) + (ftdot_2*bb12) + (ftdd_2*bb22) ).
 	Set hT2 to dh_T2 + hT1.
 	local v0_T2 is hT2/rT2.
-	//contraint on V0_T1 to less than remaining stage dv
-	//Print "v0_T2 (1): " + v0_T2.
-	// if V0_T2 > (bb02 + V0_T1){
-	// 	set V0_T2 to (bb02 + V0_T1).
-	// 	set hT2 to V0_T2*rT2.
-	// }
-	// if V0_T2 < (V0_T1){
-	// 	set V0_T2 to (V0_T1).
-	// 	set hT2 to V0_T2*rT2.
-	// }
-	//Print L5.
-	//print "v0_T2 " + v0_T2.
-	//print "rT2" + rT2.
 	Set w_T2 to sqrt((v0_T2^2) - (rdotT2^2))/rT2.
 
 	set mean_r to (rT2 + rT1)/2.
@@ -782,13 +785,14 @@ function hf_PEG {
 	set rdotT1 to rdotT1 + (bb01)*A.
 	set rdotT1 to rdotT1 + ( (bb11 + (bb01*0)) )*B.   //vertical speed at staging
 	set rdotT1 to rdotT1 + ((bb01*0) + (bb01*0*0) + (bb11*0)).
-	//Print "Calc rdotT1 check " + rdotT1.
+
 	
 	//J= 2 l=1, k=0, i=0
 	set rT1 to s_r + (s_vy*(T1)). 
 	set rT1 to rT1 + ( (cc01 + (T1*0)) )*A.
 	set rT1 to rT1 + ( cc11 + (cc01*0 + 0*T1 + 0*T1*0)  )*B.
 	set rT1 to rT1 + ( (cc01*0) + (cc11*0) ).
+	//If (rT1 < 0){Set rT1 to 1.}. // prevent negative.
 	// Print "Calc RT1 check " + rT1.
 	// Print "Change rDot3: " + (bb03*A3 + bb13*B3).
 	// Print "Change r3: " + (rdotT2*T3) + cc03*A3 + cc12*B3.
@@ -797,10 +801,6 @@ function hf_PEG {
 	// Print "Change rDot1: " + (bb01*A1 + bb11*B1).
 	// Print "Change r1: " + (s_vy*T1) + cc01*A1 + cc11*B1.
 
-	//apply boundaries on results
-	//if rT1 > tgt_r {Set rT1 to tgt_r-30000.}
-	//if rT1 < s_r {Set rT1 to s_r.}
-
 	local L4 is hf_end_cond(w, s_r, s_acc, w_T1, rT1, s_acc_end_1, T1, A1, B1). 
 	local ft_1 is L4[0].
 	local ftdot_1 is L4[1].
@@ -808,21 +808,9 @@ function hf_PEG {
 	local dh_T1 to ((s_r + rT1)/2)*( (ft_1*bb01) + (ftdot_1*bb11) + (ftdd_1*bb21) ).
 	Set hT1 to dh_T1 + h0.
 	local v0_T1 is hT1/rT1.
-	//contraint on V0_T1 to less than remaining stage dv
-	//Print "v0_T1 (1): " + v0_T1.
-	//Print dh_T1 /rT1.
-	// if V0_T1 > (bb01 + sqrt(s_vx^2 + s_vy^2)){
-	// 	set V0_T1 to (bb01 + sqrt(s_vx^2 + s_vy^2)).
-	// 	set hT1 to V0_T1*rT1.
-	// }
-	//Print tau1. 
-	//Print "T1: " + T1.
-	//Print L1.
-	//Print L4.
-	//Print "v0_T1: " + v0_T1.
-	//Print "rT1: " + rT1.
+	//constraint on V0_T1 to less than remaining stage dv
 	Set w_T1 to sqrt((v0_T1^2) - (rdotT1^2))/rT1.
-
+	//Print "w_T1: " + w_T1.
 	set mean_r to (s_r + rT1)/2.
 	local dv_gain is dh_T1/mean_r.
 	//Print "dv gain to T1: " + dv_gain.
@@ -984,8 +972,10 @@ function hf_bcn{
 	//Print s_ve. //DEBUG
 	//Print tau. //DEBUG
 	//Print T. //DEBUG
-	if T > tau { //prevent an error
-		set tau to (T-0.00000001).
+
+	if T > tau or  T = tau { //prevent infinty stack error
+		set tau to (T + 0.00000001).
+		//Print "Prevented infinity stack".
 	}
 
 	local bb0 is -s_ve*(LN(1-(T/tau))).
@@ -1016,7 +1006,7 @@ Function hf_end_cond{
 	if T_Time = 0{
 		Set T_Time to 1. // prevent divide by zero error.
 	}
-
+ 
 	//Current pitch guidance for horizontal state
 	Set C to ((body:mu/(start_r^2)) - ((start_w^2)*start_r))/start_acc. //start portion of vehicle acceleration used to counteract gravity
 	local fr is A + C. //sin pitch at start
