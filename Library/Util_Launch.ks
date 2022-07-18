@@ -165,6 +165,7 @@ function ff_CheckAbort{
 	//Print "Checking low vs: " + (verticalspeed < vert). 
 	//Print "Checking low alt: " + (alt:radar < altsp) . 
 	//Print "Checking low airsp: " + (ship:airspeed > airsp). 
+
 	If (verticalspeed < vert) and (alt:radar < altsp) and (ship:airspeed > airsp){ ///checks to see if the rocket is heading downwards at low altitudes
 		Print"Low Airspeed and altitude abort".
 		ff_Abort(abvert, altsp, Qsp).

@@ -8,6 +8,8 @@ SET TERMINAL:CHARHEIGHT TO 10.
 
 Global RunMode is 0.0.
 
+// Explorer Mk3 Hawk values 86, 200, 200
+
 local wndw is gui(300).
 set wndw:x to 400. //window start position
 set wndw:y to 120.

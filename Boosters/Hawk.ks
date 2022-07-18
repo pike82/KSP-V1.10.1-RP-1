@@ -99,14 +99,26 @@ if runMode = 2.1 {
 		gv_ap*1000,
 		gv_intAzimith,
 		0,//Target true anomoly
-		3, //shutdown stability lock parameters time.
+		1, //shutdown stability lock parameters time.
 		//Stage 3
 		150, // stage three estimated burn length
 		118, //estimated mass flow(kg/s)
 		24500, //estimated start mass in kg
 		3067, //estimated exhuast vel (thrust(N)/massflow(kg/s))
 		150, ////(S-Ve/avg_acc(in m/s)) estimated effective time to burn all propellant.S-Ve = ISP*g0
-		5 /// overburns by about 5m/s of average due to seperation thrusters
+
+		0,1,1,1,1,//T2 values
+		0,0,1,1,//T1 values
+
+		5, /// overburns by about 5m/s of average due to seperation thrusters
+		{},
+		{	
+			if (SHIP:Q < 0.005) and (SteerLex["fairlock"] = false) {
+				ff_Fairing().
+				Print "Fairings Delpolyed: " + MISSIONTIME AT (0,1).
+				set SteerLex["fairlock"] to true.
+			}
+		}
 	).
  	set runMode to 3.1.
 }	

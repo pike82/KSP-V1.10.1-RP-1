@@ -194,7 +194,8 @@ function ff_Orbit_Steer{
 //  functions to be run at various stages
 	Funct1 is hf_empty@,
 	Funct2 is hf_empty@,
-	Funct3 is hf_empty@, 
+	Funct3 is hf_empty@,
+	Funct4 is hf_empty@,  
 
  	A3 is 0, 
     B3 is 0, 
@@ -205,12 +206,22 @@ function ff_Orbit_Steer{
 	A1 is 0,
     B1 is 0. 
 
+// Creat elexicon of values that may need to be used by functions outside of this function (can't pass variable in or out any other way)
+	Global SteerLex is lexicon().
+	SteerLex:Add("T1_lock", false).// in and out
+	SteerLex:Add("T2_lock", false).// in and out
+	SteerLex:Add("tau_lock", false).// in and out
+	SteerLex:Add("loop_break", false).// in and out
+	SteerLex:Add("chiTilde", false).// in and out
+	SteerLex:Add("fairlock", false).// in and out
+	SteerLex:Add("T3", T3).//out only
+
 // determine T intial paramenters based on the number of stages.
 	If Stages < 2{
-		Set T2 to 0.
+		Set SteerLex["T2_lock"] to true.
 	}
 	If Stages < 3{
-		Set T1 to 0.
+		Set SteerLex["T1_lock"] to true.
 	}
 
 	local Thrust2 is s_Ve2 * mass_flow2.
@@ -256,9 +267,6 @@ function ff_Orbit_Steer{
     Local tgt_h is vcrs(v(tgt_r, 0, 0), v(tgt_vy, tgt_vx, 0)):mag. // target angular momentum. This is the velocity represented as energy at a point made up of the x and y components.
 	Local tgt_w is sqrt((tgt_vx^2) + (tgt_vy^2)) / (tgt_r).
 
-	Local fairlock is false.
-	local tau_lock is false.
-
 	Print "PEG Values set up".
 	Print ship:mass.
 	Print ship:drymass.
@@ -288,7 +296,7 @@ function ff_Orbit_Steer{
 	local hT3 is tgt_h.
 
 	Clearscreen.
-	local loop_break to false.
+
 	//Loop through updating the parameters until the break condition is met
 	//Line 1: Last Action
 	//Line 2: Current Phase
@@ -297,16 +305,13 @@ function ff_Orbit_Steer{
 	//Line 5: Loop
 	//Line 6: T
 	//Line 7: Pitch
-	Print "tau unlocked" AT (0,3).
+	ff_PrintLine("tau unlocked",3).
 
     until false {
 		//KUniverse:PAUSE().//used for debuging
-
-		if (SHIP:Q < 0.005) and (fairlock = false) {
-			ff_Fairing().
-			Print "Fairings Delpolyed: " + MISSIONTIME AT (0,1).
-			set fairlock to true.
-		}
+		Set SteerLex["T3"] to T3.
+		//Run second function just as the PEG starts
+		Funct2().
 
 		//Collect updated time periods
         set rTcur to MISSIONTIME.
@@ -322,80 +327,90 @@ function ff_Orbit_Steer{
 		set s_vx to sqrt(ship:velocity:orbit:sqrmagnitude - ship:verticalspeed^2).
 		set w to s_vx / s_r.
 		Local h is vcrs(v(s_r, 0, 0), v(s_vy, s_vx, 0)):mag. 
-
-		If tau_lock = false{
+		
+		If (SteerLex["tau_lock"] = false) and (ship:AVAILABLETHRUST > 5){ //availble thrust prevents calculation when engines are off
 			set s_ve to ff_Vel_Exhaust().
 			Set tau to s_ve/s_acc.
 		} else{
 			Set tau to 300.
 		}
 
-
-		if T1> 0 and (tau_lock = false){
+		if (SteerLex["tau_lock"] = false) and (SteerLex["T1_lock"] = false){
 			Print "IGM Phase 1" AT (0,2).
 			Set T1 to T1 - DeltaM.
 			Set A1 to A1 + (B1 * DeltaM).
 			Print "T1:" + T1 AT (0,6).
-			if T1 < 3 { 
-				Set tau_lock to true.
+			if (T1 < 3) and (Converged = 1){ 
+				Set SteerLex["tau_lock"] to true.
 				Print"tau locked" AT (0,3).
+				Set SteerLex["T1_lock"] to true. //prevents entering this loop again
 			}Else{
 				set s_Ve1 to s_ve.
 				set tau1 to tau.
 			}
 		}
 
-		if (T2> 0)  and (T1 = 0) and (tau_lock = false){
+		if (SteerLex["T1_lock"] = true) and (SteerLex["T2_lock"] = false) and (SteerLex["tau_lock"] = false) {
 			Print "IGM Phase 2" AT (0,2).
 			Set T2 to T2 - DeltaM.
 			Set A2 to A2 + (B2 * DeltaM).
 			Print "T2:" + T2 AT (0,6).
-			if T2 < 3 {
-				Set tau_lock to true.
+			if (T2 < 3) and (Converged = 1){
+				Set SteerLex["tau_lock"] to true.
 				Print "tau locked" AT (0,3).
+				Set SteerLex["T2_lock"] to true. //prevents entering this loop again
 			}Else{
 				set s_Ve2 to s_ve.
 				set tau2 to tau.
 			}
+			Set T1 to 0. //ensure it's removed from calculations
 		}
 
-		if T3> 0 and (T2 = 0) and (tau_lock = false){
+		if (SteerLex["T1_lock"] = true) and (SteerLex["T2_lock"] = true) and (SteerLex["tau_lock"] = false){
 			Print "IGM Phase 3" AT (0,2).
 			Set T3 to T3 - DeltaM.
 			Print "T3:" + T3 AT (0,6).
 			Set A3 to A3 + (B3 * DeltaM).
 			set s_Ve3 to s_ve.
 			set tau3 to tau.
+			Set T1 to 0. //ensure it's removed from calculations
+			Set T2 to 0. //ensure it's removed from calculations
 		}
 
-		//Run second function before thrust check
-		Funct2().
+		//Run third function before thrust check
+		Funct3().
+		//rest run s_acc incase Funct 3 requires it due to a staging event
+		set s_acc to ship:AVAILABLETHRUST/ship:mass.
 
 		// Print "AVAILABLETHRUST:" +AVAILABLETHRUST.//DEBUG
 		if (AVAILABLETHRUST < 5) {
 			Stage.// release
 			wait 0.1.
 			Wait until Stage:Ready . 
-			If T1=0{
-				Set T2 to 0.
+			If SteerLex["T1_lock"] = True{
+				Set SteerLex["T2_lock"] to True.
 			} Else {
-				Set T1 to 0.
+				Set SteerLex["T1_lock"] to True.
 			}
-			//Set T2 to 0. //end phase 2
 			Print "Staging" AT (0,1).
 			Stage.// start next engine
 			wait 3.
-			Set tau_lock to false.
+			Set SteerLex["tau_lock"] to false.
 			Print "Tau unlocked" AT (0,3).
 			set s_acc to ship:AVAILABLETHRUST/ship:mass.//needs to be reset from remainder of loop
 			//SET STEERINGMANAGER:MAXSTOPPINGTIME TO 1.
 		}
 		
-		//Run third function before HSL
-		Funct3().
-		
+		//Run fourth function before HSL
+		Funct4().
+		//enter chi-tilde approximately (HSL *2) to stop using the A and B terms.
+		if  (T3 < (HSL*2)) and (SteerLex["tau_lock"] = true) and SteerLex["T2_lock"] = True{
+			Set SteerLex["chiTilde"] to True.
+			Print "chiTilde" AT (0,1).
+		}
 		//cutoff process
-		if  (T3 < HSL) and (tau_lock = true) and (T2 = 0){
+		if  (T3 < HSL) and (SteerLex["tau_lock"] = true) and SteerLex["T2_lock"] = True{
+			Print "Terminal guidance phase" AT (0,2). 
 			Until false{
 				set s_vx to sqrt(ship:velocity:orbit:sqrmagnitude - ship:verticalspeed^2) + s_vx_offset.
 				Local track is time:seconds.
@@ -411,13 +426,13 @@ function ff_Orbit_Steer{
 				Lock Throttle to 0.
 				Set SHIP:CONTROL:PILOTMAINTHROTTLE TO 0.
 				Print "Insertion: "+ (TIME:SECONDS) AT (0,1).
-				Set loop_break to true.
+				Set SteerLex["loop_break"] to true.
 				break.
 			}
 		}
 		
 		//////////PEG Minor loop//////////////////////
-    	If (delta >= peg_step) and (tau_lock = false){  // this is used to ensure a minimum time step occurs before undertaking the next peg cycle calculations
+    	If (delta >= peg_step) and (SteerLex["tau_lock"] = false) and (ship:AVAILABLETHRUST > 5){  // this is used to ensure a minimum time step occurs before undertaking the next peg cycle calculations
 			//KUniverse:PAUSE().//used for debuging
 
 			Set last to MISSIONTIME.//reset major calculation loop
@@ -465,7 +480,7 @@ function ff_Orbit_Steer{
 			//Print T3_new AT (0,7).
 			}
 
-			if T1 >0 {
+			if SteerLex["T1_lock"] = false {
 
 				set w_T1 to w_T1_new.
 				set w_T2 to w_T2_new.
@@ -476,46 +491,51 @@ function ff_Orbit_Steer{
 				Print "T1 PEG Loop" AT (0,5).
 			} 
 
-			if (T2> 0) and (T1 = 0){
+			if (SteerLex["T2_lock"] = false) and (SteerLex["T1_lock"] = True){
 				set w_T2 to w_T2_new.
 				set w_T3 to w_T3_new.
 				set T3 to T3_new.
 				set A to A2.
 				set B to B2.
 				Print "T2 PEG Loop" AT (0,5).
+				Set T1 to 0. //ensure it's removed from calculations
 			}
 
-			if T3> 0 and (T2 = 0){
-
+			if (SteerLex["T2_lock"] = True) and (SteerLex["T1_lock"] = True){
 				if(T3_new <= HSL) and (Converged = 1){ // below this the solution starts to become very sensitive and A and B should not longer be re-calculated but fixed until insertion
-					Print "Terminal guidance enabled" AT (0,2). 
+					Print "Terminal guidance enabled" AT (0,1). 
 					Set peg_step to 1000. //we no longer want to go into the minor loop to calculate A, B and T3.
-					//Print tau_lock. //DEBUG
-					Set tau_lock to true.
+					//Print SteerLex["tau_lock"]. //DEBUG
+					Set SteerLex["tau_lock"] to true.
 					Print "tau locked" AT (0,3).
 					//KUniverse:PAUSE(). //DEBUG
 				} Else{
-					Print "T3 PEG Loop" AT (0,5).
+					Print "T3 PEG Loop: " AT (0,5).
 					set A to A3.
 					set B to B3.
 				}
 				Set T3 to T3_new.
 				set w_T3 to w_T3_new.
-
+				Set T1 to 0. //ensure it's removed from calculations
+				Set T2 to 0. //ensure it's removed from calculations
+				//KUniverse:PAUSE().//used for debuging
 			}			
 		}
 
-		// Print A. //DEBUG
-		// Print B. //DEBUG
-		// Print C. //DEBUG
-		// Print w. //DEBUG
-		// Print s_acc. //DEBUG
-		// Print peg_step. //DEBUG
+		// Print A AT (0,15). //DEBUG
+		// Print B AT (0,16). //DEBUG
+		// Print C AT (0,17). //DEBUG
+		// Print w AT (0,18). //DEBUG
+		// Print s_acc AT (0,19). //DEBUG
+		// Print peg_step AT (0,20). //DEBUG
 
-		If loop_break = true {
+		If SteerLex["loop_break"] = true {
 			Break.// exit loop
 		}
-		set C to ((body:mu/(s_r^2)) - ((w^2)*s_r))/s_acc.	
+		set C to ((body:mu/(s_r^2)) - ((w^2)*s_r))/s_acc.
+		if SteerLex["tau_lock"] = True{
+			Set A to 0.
+		}	
 		set s_pitch to A + C. //sin pitch at current time.
 		set s_pitch to max(-0.707, min(s_pitch, 0.707)). // limit the pitch change to between -45 and 45 degress
 		Set s_pitch to arcsin(s_pitch). //covert into degress
@@ -526,14 +546,18 @@ function ff_Orbit_Steer{
 			LOCK STEERING TO heading(sv_intAzimith, int_pitch).
 		}
 		Print "S pitch: " + s_pitch AT (0,7).
-		//Print "T1:" + T1. //DEBUG
-		//Print "T2:" + T2. //DEBUG
-		//Print "T3:" + T3. //DEBUG
-		//Print "RT3: " + rT3. //DEBUG
-		//Print "HT3: " + hT3. //DEBUG
+		// Print "T1:" + T1. //DEBUG
+		// Print "T2:" + T2. //DEBUG
+		// Print "T3:" + T3. //DEBUG
+		// Print "RT3: " + rT3. //DEBUG
+		// Print "HT3: " + hT3. //DEBUG
 		//Print (HSL - delta). //DEBUG
-		//Print tau_lock. //DEBUG
-	wait 0.1.
+		//Print SteerLex["tau_lock"]. //DEBUG
+		if (T3 <= (2*HSL)){
+			wait 0.1.//reduce computation needs until the end.
+		}else{
+			wait 0.01.
+		}
 	}//end of loop
 
 } // end of function
@@ -731,8 +755,8 @@ function hf_PEG {
 	set mean_r to (rT3 + rT2)/2.
 	local dv_T3 is dh_T3/mean_r.
 	//Constrain T3 outputs
-	if (dv_T3 < 5) and (T1 > 0) {Set dv_T3 to 5.} //prevent small dv_T3 which will cause errors
-	if (dv_T3 > tau3) {Set dv_T3 to (tau3).} //prevent a big dv_T3 beyond Tau3 which is impossible and will cause errors  
+	//if (dv_T3 < 5) and (T1 > 0) {Set dv_T3 to 5.} //prevent small dv_T3 which will cause errors
+	//if (dv_T3 > tau3) {Set dv_T3 to (tau3).} //prevent a big dv_T3 beyond Tau3 which is impossible and will cause errors  
 	Set T3 to tau3*(1 - constant:e ^ (-dv_T3/s_ve3)).
 	if T3 <0 {Set T3 to 2.}
 	//Print "dv gain T3 to Orbit: " + dv_T3.
@@ -770,7 +794,7 @@ function hf_PEG {
 	local dv_gain is dh_T2/mean_r.
 	//Print "dv gain to T1 to T2: " + dv_gain.
 
-	if T3 = 0{ // if only two stage to orbit
+	if (T1 = 0) and NOT(T2=0){ // if only two stage to orbit
 		Set T2 to tau2*(1 - constant:e ^ (-dv_gain/s_ve2)).
 		//set T2 boundaries
 		if T2 <0 {Set T2 to 2.}
@@ -815,7 +839,7 @@ function hf_PEG {
 	local dv_gain is dh_T1/mean_r.
 	//Print "dv gain to T1: " + dv_gain.
 
-	if T2 = 0 { // if only single stage to orbit
+	if Not (T1 = 0) { // if only three stages to orbit
 		Set T1 to tau1*(1 - constant:e ^ (-dv_gain/s_ve1)).
 	}
 

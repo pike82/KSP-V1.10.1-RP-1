@@ -8,7 +8,7 @@ SET TERMINAL:CHARHEIGHT TO 10.
 
 Global RunMode is 0.0.
 
-//Hawk values 86 , 250, 250
+//Hawk Mk3 values 86 , 250, 250 (light 3T) or 86,200,200 (heavy 3.5T)
 
 local wndw is gui(300).
 set wndw:x to 400. //window start position
@@ -94,7 +94,6 @@ if runMode = 0.1 {
 	RCS off.
 	set runMode to 1.1.
 }
-
 if runMode = 1.1 { 
 	Print "Run mode is:" + runMode.
 	SET SHIP:CONTROL:FORE to 0.0.
@@ -106,7 +105,6 @@ if runMode = 2.1 {
 	ff_node_time(180).
 	set runMode to 3.1.
 }
-
 if runMode = 3.1 { 
 	Print "Run mode is:" + runMode.
 	Local Starttime is time:seconds + nextnode:eta - ff_burn_time(nextnode:burnvector:mag/2).

@@ -2,7 +2,6 @@
 //General Credits, script and ideas came from the following:
 // http://youtube.com/gisikw
 
-
 ///// Download Dependant libraies
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -25,14 +24,9 @@
 //TODO: Further tests from multiple orientations to ensure it works from multiple angles.
   
 	FUNCTION ff_dok_dock {
-	PARAMETER dockingPortTag, targetPortTag, targetName, Safe_dist is 75.
-		SET dockingPort TO hf_dok_get_port(dockingPortTag, Ship).
-	    Print "Setting Target Vessel".
-	    SET targetVessel TO VESSEL(targetName).
+	PARAMETER dockingPort, targetPort, targetVessel, Safe_dist is 75, SpeedMod is 1.
 	    dockingPort:CONTROLFROM().
-		Print "Controlling from Port".
-	    SET targetPort TO hf_dok_get_port(targetPortTag, targetName).
-		Print "Setting target Port".
+		Print "Controlling from Port location".
 		RCS ON.
 		If (SHIP:VELOCITY:ORBIT - targetVessel:VELOCITY:ORBIT):MAG < 0{ //test if we are moving towards or away from the target (True is away from the target)
 			Print "Zeroing Velocity".
@@ -43,65 +37,48 @@
 		}
 		Print "Ensuring Range".
 	    hf_dok_ensure_range(targetVessel, dockingPort, Safe_dist, 1). //first check is to ensure not within safe distance, if we are move out at 1 m/s to ensure we have appropriate clearance before commencing the docking
-		
+
 		Print "Sideswipe Speed 1".
-		hf_dok_sideswipe(targetPort, dockingPort, Safe_dist, Safe_dist*4, 5, 0.01). Print "Sideswipe Speed 2".
-		hf_dok_sideswipe(targetPort, dockingPort, Safe_dist, Safe_dist*3, 3.5, 0.01). Print "Sideswipe Speed 3".
-		hf_dok_sideswipe(targetPort, dockingPort, Safe_dist, Safe_dist*2, 2.5, 0.01). Print "Sideswipe Speed 4".
-		hf_dok_sideswipe(targetPort, dockingPort, Safe_dist, Safe_dist*1.05, 1.5, 0.01). 
+		hf_dok_sideswipe(targetPort, dockingPort, Safe_dist, Safe_dist*4, 5*SpeedMod, 0.01). Clearscreen. Print "Sideswipe Speed 2".
+		hf_dok_sideswipe(targetPort, dockingPort, Safe_dist, Safe_dist*3, 3.5*SpeedMod, 0.01). Clearscreen. Print "Sideswipe Speed 3".
+		hf_dok_sideswipe(targetPort, dockingPort, Safe_dist, Safe_dist*2, 2.5*SpeedMod, 0.01). Clearscreen. Print "Sideswipe Speed 4".
+		hf_dok_sideswipe(targetPort, dockingPort, Safe_dist, Safe_dist*1.05, 2*SpeedMod, 0.01). 
 	   
 		Print "Locking Port Orientation".
 		// rotate so the ports are acing each other
 		LOCK STEERING TO -1 * targetPort:PORTFACING:VECTOR.
 		Print "Commencing Approach using RCS".
 		Print "Approach 1".
-		hf_dok_approach_port(targetPort, dockingPort, 75, 1.5). Print "Approach 2".
-		hf_dok_approach_port(targetPort, dockingPort, 50, 1.0). Print "Approach 3".
-		hf_dok_approach_port(targetPort, dockingPort, 20, 0.75). Print "Approach 4".
-		hf_dok_approach_port(targetPort, dockingPort, 10, 0.3). Print "Approach 5".
-		hf_dok_approach_port(targetPort, dockingPort, 5, 0.2). Print "Final Approach".
-		hf_dok_approach_port(targetPort, dockingPort, 1.0, 0.1).  
-		hf_dok_approach_port(targetPort, dockingPort, 0.4, 0.1). 
+		hf_dok_approach_port(targetPort, dockingPort, max(Safe_dist,20), 2*SpeedMod). Clearscreen. Print "Approach 2".
+		hf_dok_approach_port(targetPort, dockingPort, max(Safe_dist/2,15), 1.5*SpeedMod). Clearscreen. Print "Approach 3".
+		hf_dok_approach_port(targetPort, dockingPort, max(Safe_dist/4,12.5), 0.75*SpeedMod). Clearscreen. Print "Approach 4".
+		hf_dok_approach_port(targetPort, dockingPort, 10, max(0.3,0.3*SpeedMod)). Clearscreen. Print "Approach 5".
+		hf_dok_approach_port(targetPort, dockingPort, 5, max(0.2,0.2*SpeedMod)). Clearscreen. Print "Final Approach".
+		hf_dok_approach_port(targetPort, dockingPort, 1.0, max(0.1,0.1*SpeedMod)).  
+		hf_dok_approach_port(targetPort, dockingPort, 0.1, max(0.025,0.1*SpeedMod)). 
 		RCS OFF.
+		Unlock ALL.
 	}// End Function
 	
 ///////////////////////////////////////////////////////////////////////////////////	
 //Credits: Own
 	
 	FUNCTION ff_undock {
-	PARAMETER dockingPortTag, targetPortTag, targetName, Safe_dist is 150.
-		SET dockingPort TO hf_dok_get_port(dockingPortTag, Ship).
-	    dockingPort:CONTROLFROM().
+	PARAMETER undockingPort, targetPort, targetVes, Safe_dist is 150.
+	    undockingPort:CONTROLFROM().
 		wait 1.0.
 		dockingPort:undock.
 		RCS ON.
 		Print "Ensuring Range".
-	    hf_undock_move(targetVessel, dockingPort, Safe_dist*0.1, 0.25). //first check is to ensure not within safe distance, if we are move out at 0.25 m/s to ensure we have appropriate clearance before speeding up
-		hf_undock_move(targetVessel, dockingPort, Safe_dist*0.2, 1). //first check is to ensure not within safe distance, if we are move out at 1 m/s to ensure we have appropriate clearance before before speeding up
-		hf_undock_move(targetVessel, dockingPort, Safe_dist, 2). //first check is to ensure not within safe distance, if we are move out at 2 m/s to ensure we have appropriate clearance before before speeding up
+	    hf_undock_move(targetVes, targetPort, Safe_dist*0.1, 0.25). //first check is to ensure not within safe distance, if we are move out at 0.25 m/s to ensure we have appropriate clearance before speeding up
+		hf_undock_move(targetVes, targetPort, Safe_dist*0.2, 1). //first check is to ensure not within safe distance, if we are move out at 1 m/s to ensure we have appropriate clearance before before speeding up
+		hf_undock_move(targetVes, targetPort, Safe_dist, 2). //first check is to ensure not within safe distance, if we are move out at 2 m/s to ensure we have appropriate clearance before before speeding up
 		RCS OFF.
 	}// End Function
 
 ///////////////////////////////////////////////////////////////////////////////////
 //Helper Functions
 /////////////////////////////////////////////////////////////////////////////////////
-//Credits: http://youtube.com/gisikw
-
-	FUNCTION hf_dok_get_port {
-	Print "Getting port".
-	  PARAMETER name, vessel.
-	  LIST TARGETS IN targets. // creates a list of all potential targets(list keyword) and calls it the variable targets
-	  targets:add(vessel). //(adds the vessel to the targets list just incase it is part of a docked element)
-	  FOR target IN targets { // for each potential target in the targets list
-		IF target:DOCKINGPORTS:LENGTH <> 0 { // checks to see if the potentail target has a docking port in its parts list
-		  FOR port IN target:DOCKINGPORTS {
-			IF port:TAG = name RETURN port.
-		  }
-		}
-	  }
-	}// End Function
-	
-///////////////////////////////////////////////////////////////////////////////////
 	
 //Credits: Own
 
@@ -126,15 +103,16 @@
 	PARAMETER targetVessel, dockingPort, distance, speed.
 
 	  LOCK relativePosition TO SHIP:POSITION - targetVessel:POSITION.
-	  LOCK departVector TO (relativePosition:normalized * distance) - relativePosition.
+	  LOCK departVector TO (relativePosition:normalized * (distance + 2)) - relativePosition.
 	  LOCK relativeVelocity TO SHIP:VELOCITY:ORBIT - targetVessel:VELOCITY:ORBIT.
-		If relativePosition:mag < distance{
+		If relativePosition:mag < (distance + 1){
 			UNTIL FALSE {
 				hf_dok_translate((departVector:normalized * speed) - relativeVelocity). // if inside the minimimu range move outside the minimum range
-				IF relativePosition:mag < 0.1 BREAK. // once outside the minimum range break
+				IF relativePosition:mag > (distance + 1) BREAK. // once outside the minimum range break
 				WAIT 0.01.
+				Print "Slow backoff" + relativePosition:mag AT (0,9).
 			}
-			hf_dok_translate(V(0,0,0)). // halts RCS by saying the target vector change is zero (note the ship may still be moveing towards the target)
+			hf_dok_translate(V(0,0,0)). // halts RCS by saying the target vector change is zero (note the ship may still be moving towards the target)
 		} // End if
 	}// End Function
 	
@@ -219,8 +197,8 @@
 		Print "Inside Loop".
 		  
 		//Set up Exclusion zone angles
-		Set min_Ang to arcsin(Safe_distance/Centre_node_vec:mag).
-		Set rel_Ang to Vang(Centre_node_vec:normalized, relativeVelocity:normalized).
+		local min_Ang is arcsin(Safe_distance/Centre_node_vec:mag).
+		local rel_Ang is Vang(Centre_node_vec:normalized, relativeVelocity:normalized).
 		
 		
 		//Identify the reference node the ship is pointing towards he closest without entering the exclusion zone
@@ -333,12 +311,12 @@
 		Set rel_Ang to Vang (Centre_node_vec:normalized, test_Vector:normalized).
 		
 		If min_Ang < rel_Ang {
-		//We are missiong the exclusion zone.
-		Return True.
+			//We are missiong the exclusion zone.
+			Return True.
 		}
 		Else {
-		//We will enter the exclusion zone.
-		Return False.
+			//We will enter the exclusion zone.
+			Return False.
 		}
 	}// End Function
 	
@@ -358,22 +336,29 @@
 	FUNCTION hf_dok_approach_port {
 	PARAMETER targetPort, dockingPort, distance, speed.
 
-	  dockingPort:CONTROLFROM().
+		dockingPort:CONTROLFROM().
 
-	  LOCK distanceOffset TO targetPort:PORTFACING:VECTOR * distance.
-	  LOCK approachVector TO targetPort:NODEPOSITION - dockingPort:NODEPOSITION + distanceOffset.
-	  LOCK relativeVelocity TO SHIP:VELOCITY:ORBIT - targetPort:SHIP:VELOCITY:ORBIT.
-	  LOCK STEERING TO LOOKDIRUP(-targetPort:PORTFACING:VECTOR, targetPort:PORTFACING:UPVECTOR).
+		LOCK distanceOffset TO targetPort:PORTFACING:VECTOR * distance.
+		LOCK approachVector TO targetPort:NODEPOSITION - dockingPort:NODEPOSITION + distanceOffset.
+		LOCK relativeVelocity TO SHIP:VELOCITY:ORBIT - targetPort:SHIP:VELOCITY:ORBIT.
+		LOCK STEERING TO LOOKDIRUP(-targetPort:PORTFACING:VECTOR, targetPort:PORTFACING:UPVECTOR).
 
-	  UNTIL dockingPort:STATE <> "Ready" {
-		hf_dok_translate((approachVector:normalized * speed) - relativeVelocity).
-		LOCAL distanceVector IS (targetPort:NODEPOSITION - dockingPort:NODEPOSITION).
-		IF VANG(dockingPort:PORTFACING:VECTOR, distanceVector) < 2 AND abs(distance - distanceVector:MAG) < 0.3 {
-		  BREAK.
+		Set PM to targetPort:GetMODULE("ModuleDockingNode").
+
+		UNTIL PM:HASEVENT("undock"){//dockingPort:STATE <> "Ready" {
+			hf_dok_translate((approachVector:normalized * speed) - relativeVelocity).
+			LOCAL distanceVector IS (targetPort:NODEPOSITION - dockingPort:NODEPOSITION).
+			Print "Node Distance: " + distance AT (0,10).
+			Print "Distance: " + distanceVector:MAG AT (0,11).
+			Print "Node Speed: " + speed AT (0,12).
+			Print "Speed: " + relativeVelocity:mag AT (0,13).
+
+			IF VANG(dockingPort:PORTFACING:VECTOR, distanceVector) < 2 AND abs(distance - distanceVector:MAG) < 0.3 {
+				BREAK.
+			}
+			WAIT 0.01.
 		}
-		WAIT 0.01.
-	  }
 
-	  hf_dok_translate(V(0,0,0)).
+		hf_dok_translate(V(0,0,0)).
 	}// End Function
 	

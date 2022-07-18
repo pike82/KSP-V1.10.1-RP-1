@@ -18,7 +18,8 @@ FOR file IN LIST(
 	"OrbMnvNode" + gv_ext,
 	"Util_Launch"+ gv_ext,
 	"Util_Vessel"+ gv_ext,
-	"Util_Engine"+ gv_ext)
+	"Util_Engine"+ gv_ext,
+	"Docking" + gv_ext)
 	{ 
 		RUNONCEPATH("0:/Library/" + file).
 		wait 0.001.	
@@ -74,7 +75,6 @@ set val to pevalue:text.
 }
 
 Global boosterCPU is "Hawk".
-ff_partslist(). //standard partslist create
 
 Print "Waiting for activation".
 //wait for active
@@ -110,6 +110,32 @@ if runMode = 1.1 {
 	//deorbit burn is 100m/s
 	set runMode to 10.1.
 }
+
+if runmode = 2.1{
+	//docking
+	set targetVessel TO VESSEL("Hawk Mk3 - Zeus1-Target").
+	set shipPort to Ship:PARTSDUBBEDPATTERN("DockGem").
+	print shipPort.
+	set shipPort to ShipPort[0].
+	set TarDock to targetvessel:PARTSDUBBEDPATTERN("TarPort").
+	Print TarDock.
+	set TarDock to TarDock[0].
+
+	ff_dok_dock(shipPort, TarDock, targetVessel, 20, 0.25).
+}
+if runmode = 3.1{
+	//undocking
+	//set targetVessel TO VESSEL("Hawk Mk3 - Zeus1-Target").
+	set shipPort to Ship:PARTSDUBBEDPATTERN("DockGem").
+	print shipPort.
+	set shipPort to ShipPort[0].
+	set TarDock to ship:PARTSDUBBEDPATTERN("TarPort").
+	Print TarDock.
+	set TarDock to TarDock[0].
+
+	ff_undock( shipPort, TarDock, SHIP, 10).
+}
+
 ///Final and abort runmode
 if runMode = 10.1 { 
 	Print "Run mode is:" + runMode.
@@ -118,7 +144,7 @@ if runMode = 10.1 {
 	}
 	//Drogue chute deploy
 	AG2 on.
-	until alt:radar < 2500{ // deploy main at correct alt
+	until alt:radar < 3300{ // deploy main at correct alt
 		Wait 0.5.
 	}
 	///use to main chute

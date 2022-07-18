@@ -238,6 +238,13 @@ Function ff_Alarm{
 	}
 }
 
+function ff_PrintLine{
+	parameter str, line.
+	ff_clearline (line).
+	Print str AT (0,line).
+
+}
+
 ////////////////////////////////////////////////////////////////
 
 function hf_highlight_part {

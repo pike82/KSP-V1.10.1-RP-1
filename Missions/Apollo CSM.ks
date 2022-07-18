@@ -1,96 +1,146 @@
-// Get Booster Values
-Print core:tag.
+ // Get Booster Values
+CORE:PART:GETMODULE("kOSProcessor"):DOEVENT("Open Terminal").
+SET TERMINAL:HEIGHT TO 65.
+SET TERMINAL:WIDTH TO 45.
+SET TERMINAL:BRIGHTNESS TO 0.8.
+SET TERMINAL:CHARHEIGHT TO 10.
 
+Set SHIP:CONTROL:PILOTMAINTHROTTLE to 0.
 
-//Wait for launch window //16/07/1969 at 13:32:00 GMT
-Set vYear to 19.
-Set vDay to 202.
-Set vHour to 13.
-Set vMinute to 31.
-Set vSecond to 59.
+Global RunMode is 0.0.
 
-Until TIME:YEAR >= vYear and TIME:DAY >= vDay and Time:HOUR >= vHour and Time:MINUTE >= vMinute and Time:SECOND >= (vSecond-17) { // 
-    Clearscreen.
-    Print TIME:YEAR.
-    Print TIME:DAY.
-    Print Time:CLOCK.
-    Wait 0.001.
+Global gv_ext is ".ks".
+
+PRINT ("Initialising libraries").
+//Initialise libraries first
+
+FOR file IN LIST(
+	"OrbRv" + gv_ext,
+	"OrbMnvNode" + gv_ext,
+	"Util_Launch"+ gv_ext,
+	"Util_Vessel"+ gv_ext,
+	"Util_Engine"+ gv_ext,
+	"Docking" + gv_ext)
+	{ 
+		RUNONCEPATH("0:/Library/" + file).
+		wait 0.001.	
+	}
+local wndw is gui(300).
+set wndw:x to 400. //window start position
+set wndw:y to 120.
+local label is wndw:ADDLABEL("Enter Values").
+  	set label:STYLE:ALIGN TO "CENTER".
+  	set label:STYLE:HSTRETCH TO True. // Fill horizontally
+local box_RunMode is wndw:addhlayout().
+  	local RunMode_label is box_RunMode:addlabel("Runmode").
+  	local RunModevalue is box_RunMode:ADDTEXTFIELD("0.1").
+  	set RunModevalue:style:width to 100.
+  	set RunModevalue:style:height to 18.
+local somebutton is wndw:addbutton("Confirm").
+set somebutton:onclick to Continue@.
+
+// Show the GUI.
+wndw:SHOW().
+LOCAL isDone IS FALSE.
+
+on abort {
+	Print "on abort selected".
+	set isDone to true.
+	set runmode to 10.1.
+	ff_Abort(). 
 }
-Set basetime to time:seconds + 18.
+
+UNTIL isDone {
+	WAIT 1.
+}
+
+Function Continue {
+	Print "Continue".
+	local val is RunModevalue:text.
+	set val to val:tonumber(0).
+	set RunMode to val.
+	wndw:hide().
+	set isDone to true.
+	Print RunMode.
+}
+
+Global boosterCPU is "Hawk".
+Global boosterCPU1 is "SaturnIB".
+Global boosterCPU2 is "SaturnV".
 
 Print "Waiting for activation".
 //wait for active
-
-Until time:seconds > (basetime + 11524){
-    Print "Time until seperation:" + (basetime + 11524 - Time:seconds) at (0,10).
-    wait 100.
+if runMode = 0.1 { 
+	Local holdload is false. 
+	until holdload = true {
+		Set holdload to true. //reset to true and rely on previous stage to turn false
+		local PROCESSOR_List is list().
+		LIST PROCESSORS IN PROCESSOR_List. // get a list of all connected cores
+		for Processor in PROCESSOR_List {
+			if (Processor:TAG = boosterCPU) or (Processor:TAG = boosterCPU1) or (Processor:TAG = boosterCPU2){ //checks to see if previous stage is present
+				Set holdload to false.
+			}
+		}
+		wait 0.1.
+		If alt:radar < 50000 { //check for automatic abort conditions during ascent below 50,000m, above this it can be manually activiated.
+			ff_CheckAbort().
+		}
+		//Print holdload.
+	}
 }
 
-Print "CMD Active".
-Lock Throttle to 0.
-Set SHIP:CONTROL:PILOTMAINTHROTTLE TO 0.
-
-
-Until time:seconds > (basetime + 11824){
-    Print "Time until seperation:" + (basetime +11824 - Time:seconds) at (0,10).
-    wait 10.
+if runMode = 1.1 { 
+	Print "Run mode is:" + runMode.
+	ff_COMMS().
+	RCS off.
+	set runMode to 2.1.
 }
 
-Clearscreen.
-Print "Pilot control for LEM extraction".
+if runmode = 2.1{
+	Print "Run mode is:" + runMode.
+	//docking
+	set targetVessel TO VESSEL("ApolloMk3").
+	set shipPort to Ship:PARTSDUBBEDPATTERN("CSMDock").
+	print shipPort.
+	set shipPort to ShipPort[0].
+	set TarDock to targetvessel:PARTSDUBBEDPATTERN("LEM").
+	Print TarDock.
+	set TarDock to TarDock[0].
 
-Until time:seconds > (basetime + 96298){
-    Print "Time until mid course correction:" + (basetime +96298 - Time:seconds) at (0,10).
-    wait 10.
+	ff_dok_dock(shipPort, TarDock, targetVessel, 20, 0.25).
+    Shutdown. //ends the script
+}
+if runmode = 3.1{
+	Print "Run mode is:" + runMode.
+	ff_partslist("AJ10-137"). //stand partslist create for engines using node burns
+	Local Starttime is time:seconds + nextnode:eta - ff_burn_time(nextnode:burnvector:mag/2).
+	Print "Start time is: " + Starttime.
+	ff_Alarm(Starttime).
+	Until Starttime < (time:seconds + 60){
+		wait 1.
+	}
+	ff_Node_exec(Starttime, 2).
+	lock throttle to 0.
+	Shutdown.
 }
 
-//80:11:36.6 lunar obit insertion
-
-Until time:seconds > (basetime + 288639.6){
-    Print "Time lunar obit insertion:" + (basetime +288639.6 - Time:seconds) at (0,10).
-    wait 10.
+///Final and abort runmode
+if runMode = 10.1 { 
+	Print "Run mode is:" + runMode.
+	until alt:radar < 15000{ // Activate drogue and remove heatsheild cover
+		Wait 0.5.
+	}
+	AG2 on.//Drogue chute deploy and remove top heat sheild
+	until alt:radar < 3300{ // deploy main at correct alt
+		Wait 0.5.
+	}
+	///use to main chute
+	Print "cutaway and main chute".
+	AG1 on.// cutaway droge an activate main
+	until alt:radar < 5{ 
+		Wait 1.
+	}
+	AG3 on.
+	Shutdown.
 }
 
-//100:12:00 undocking
-
-Until time:seconds > (basetime + 360720){
-    Print "Time Undocking:" + (basetime +360720 - Time:seconds) at (0,10).
-    wait 10.
-}
-
-
-
-//128:03:00 docking
-
-Until time:seconds > (basetime + 460980){
-    Print "Time Docking:" + (basetime + 460980 - Time:seconds) at (0,10).
-    wait 10.
-}
-
-//130:09:31.2 ascent stage jettison
-
-Until time:seconds > (basetime + 468571.2){
-    Print "Time ascent jettison:" + (basetime +468571.2 - Time:seconds) at (0,10).
-    wait 10.
-}
-
-//130:10:30.1 ascent stage seperation
-
-Until time:seconds > (basetime + 468630.1){
-    Print "Time ascent move away:" + (basetime +468630.1 - Time:seconds) at (0,10).
-    wait 10.
-}
-
-//135:23:42.3 trans earth injection
-
-Until time:seconds > (basetime + 468630.1){
-    Print "Time Trans earth injection:" + (basetime +468630.1 - Time:seconds) at (0,10).
-    wait 10.
-}
-
-//150:29:57.4 midcourse correction
-
-//194:49:12.7 CSM separation
-
-
-Shutdown. //ends the script

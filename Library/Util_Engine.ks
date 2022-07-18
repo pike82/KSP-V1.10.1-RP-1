@@ -80,6 +80,23 @@ FUNCTION ff_FLAMEOUT {
 			Set flameout to True.
 		}
 	}
+
+	If Ullage = "boostkeep"{ //i.e strap on solids or other boosters around a main engine that continues to burn so no ullage required
+	//Print "Boost Flameout".
+		///The following determiines the number of engines in the current stage that are flamed out.
+		LIST engines IN engList.
+		FOR eng IN engList {  //Loops through Engines in the Vessel
+			IF (eng:STAGE + Stage_offset) >= STAGE:NUMBER { //Check to see if the engine is in the current Stage
+				Set engine_count to engine_count + 1.
+				if eng:flameout{
+					SET EnginesFlameout TO EnginesFlameout + 1.
+				}
+			}
+		}
+		if EnginesFlameout >0{
+			Set flameout to True.
+		}
+	}
 	
 	If Ullage = "hot"{ /// ie. Doing a hot stage
 	//Print "Hot Flameout".

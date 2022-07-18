@@ -1083,7 +1083,7 @@ function f_Orbit_Steer{
 
 		//562.4 end of tau mode
 
-		//665.2 begin terminal guidance
+		//665.2 begin terminal guidance (chi-tilde mode, drops the altitude in A and rate term in B at this point and only works off C to counteract gravity)
 
 		//691.6 begin chi freeze end Phase 3
 		if (time:seconds > (liftoff + 691.6)) and (I = 5){
@@ -1876,6 +1876,7 @@ function f_clearLine {
 	}
 	print s at (0,line).
 }
+
 function f_f1_thrust {
 	return 1.
 	//return max(0.001,((ship:AVAILABLETHRUST/(ship:mass*9.81))-1.20)/1.8).//3.0 to 1.20 TWR range // was 2.6 to 1.2
