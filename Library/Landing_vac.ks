@@ -126,7 +126,7 @@ Function ff_CAB{
 		Set dpitch TO PIDVV:UPDATE(TIME:SECONDS, verticalspeed). //Get the PID on the AlT diff as desired vertical velocity
 		Set highpitch to min(max(highpitch + dpitch,0),maxpitch). // Ensure the pitch does not push downward in gravity direction and limits the pitch in the gravity direction using maxpitch
 		Clearscreen.
-		Print "Undertaking CAB".
+		Print "Undertaking CAB: " + VertStp.
 		Print "Ground Speed: " + SHIP:GROUNDSPEED.
 		Print "Pitch: " + highpitch.
 		wait 0.01.
@@ -141,7 +141,10 @@ Function ff_CAB{
 //Credits: Own with ideas sourced from http://www.danielrings.com/2014/08/07/kspkos-grasshopper-a-model-of-spacexs-grasshopper-program-in-the-kerbal-space-program-using-the-kos-mod/
 // The hover land function maintains a hovers position and moves the ship to the coordinates wanted at the vertical speed requested in the ship veriable limits
 Function ff_hoverLand {	
-Parameter Hover_alt is 50, BaseLoc is gl_shipLatLng(). 
+Parameter Hover_alt is 50, BaseLoc is ship:geoposition. 
+	Set sv_PIDALT to PIDLOOP(0.9, 0.0, 0.0005, -50, 1).//SET PID TO PIDLOOP(KP, KI, KD, MINOUTPUT, MAXOUTPUT).
+	Set sv_PIDLAT to PIDLOOP(1.0, 0.0, 5.0, 5, -5).//SET PID TO PIDLOOP(KP, KI, KD, MINOUTPUT, MAXOUTPUT).
+	Set sv_PIDLONG to PIDLOOP(0.5, 0, 2.5, -5, 5).//SET PID TO PIDLOOP(KP, KI, KD, MINOUTPUT, MAXOUTPUT).
 	Set sv_PIDALT:SETPOINT to Hover_alt.
 	Set sv_PIDLAT:Setpoint to BaseLoc:Lat.
 	Set sv_PIDLONG:Setpoint to BaseLoc:Lng.
@@ -169,7 +172,7 @@ Parameter Hover_alt is 50, BaseLoc is gl_shipLatLng().
 	//Set SteerDirection to HEADING(90,90). // TODO: This was in the old script, need to ensure this can be removed as it would be better if continual refinement can happen during the descent too.
 
 	Set sv_PIDALT:SETPOINT to -0.25. // set just below the surface to ensure touchdown
-	Until(gl_baseALTRADAR() < 0.25) or (Ship:Status = "LANDED"){
+	Until(ALT:RADAR < 0.25) or (Ship:Status = "LANDED"){
 		ClearScreen.
 		Print "Landing".
 		Set dtStore to hf_LandingPIDControlLoop(dtStore["lastdt"], dtStore["lastPos"]).
@@ -273,7 +276,7 @@ Function ff_BestLand{
 	Lock Throttle to 1.0.
 	until (Basetime + profiletime +10 ) - time:seconds < 0 OR SHIP:GROUNDSPEED < 2{ //TODO: Make it so the +10 is not hardcoded in.
 		Set tgtFallheight to Flight_Arr["fallDist"] + SafeAlt + (ThrottelStartTime * abs(ship:verticalspeed)).
-		Set FALLSpeed to PIDFALL:UPDATE(TIME:SECONDS, gl_baseALTRADAR() - tgtFallheight).
+		Set FALLSpeed to PIDFALL:UPDATE(TIME:SECONDS, ALT:RADAR - tgtFallheight).
 		Set PIDVV:SETPOINT to FALLSpeed.
 		Set dpitch TO PIDVV:UPDATE(TIME:SECONDS, verticalspeed). //Get the PID on the AlT diff as desired vertical velocity
 		Set highpitch to max(highpitch + dpitch,0). // Ensure the pitch does not go below zero as gravity will efficently lower the veritcal velocity if required
@@ -281,7 +284,7 @@ Function ff_BestLand{
 		Print "Limiting Descent Speed".
 		Print "Ground Speed: " + SHIP:GROUNDSPEED.
 		Print "tgtFallheight:" + tgtFallheight.
-		Print "Fall Clearance:" + (gl_baseALTRADAR() - tgtFallheight).
+		Print "Fall Clearance:" + (ALT:RADAR - tgtFallheight).
 		Print "Fall speed:" + Fallspeed.
 		Print "Vertical speed:" + verticalspeed.
 		Print "Pitch: " + highpitch.
@@ -292,6 +295,50 @@ Function ff_BestLand{
 } //End of Function
 
 ///////////////////////////////////////////////////////////////
+
+Function ff_ESTProfileLand{ 
+	//this estimate the burn time to no horizontal velocity based on a profile approach
+	Parameter LandTime, EndHorzVel is 0. // throttle start time is the time it take the trottle to get up to full power TODO: have this also take into account the rotation of the body so it can target a specific landing spot.
+	Print "Landing Burn Start Time: " + LandTime.
+	Wait 5.
+	Set PEVec to velocityat(Ship, LandTime):Surface.
+	Set Horzvel to abs(PEVec:mag). // its known at PE the verVel is Zero so all velocity must in theory be horizontal	
+	Set VerVel to 0.
+	Set VerDist to 0.
+	Set Dist to 0.
+	local profiletime is 0.
+	Set tgtPERad to Orbit:Periapsis+body:radius.
+	Set StartMass to (ship:mass * 1000).
+
+	until Horzvel <= EndHorzVel {//run the iteration until the ground velocity is 0 or another value if specified
+		Set VerVelStart to VerVel.
+		Set StartMass to StartMass - ff_mdot().//gl_ISP, gl_Thrust,gl_Engines).
+		Set acc to (ship:availablethrust* 1000)/(StartMass). //the acceleration of the ship in one second
+		Set VertAccel to ((body:mu/((tgtPERad-VerDist)^2)) - ((Horzvel^2)/(tgtPERad-VerDist))). //portion of vehicle acceleration used to counteract gravity as per PEG ascent guidance formula in one second
+		Set VerVel to VerVelStart - abs(VertAccel). // current vertical velocity.
+		Set VerDist to VerDist - ((VerVelStart + VerVel)/2).
+		Set Horzvel to Horzvel - abs(acc).
+		Set dist to dist + Horzvel.
+		Set profiletime to profiletime + 1.
+		Clearscreen.
+		Print "Acc:"+acc.
+		Print "VAcc:"+VertAccel.
+		Print "Hvel:"+Horzvel.
+		Print "Vdist:"+VerDist.
+		Print "Vvel:"+VerVel.
+		Print "Dist:"+dist.
+		Print "Time:"+profiletime. // note this is the worst case burn time if a CAB needs to be performed. //Ideally it will be shorter.
+		wait 0.001.
+	} // note this estimates based on a CAB which is the worst case senario, but in reality it should be able to burn for less time than estimated.
+	local arr is lexicon().
+	arr:add ("VerVel", VerVel).
+	arr:add ("dist", dist).
+	arr:add ("profiletime", profiletime).
+	arr:add ("acc", acc).
+	Return(arr).
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 //Credits: OWN
 
@@ -495,7 +542,7 @@ Parameter lastdt, lastPos.
 	Set LatDist to hf_geoDistance(LATLNG(gl_shipLatLng:Lat,tgt:Lng),tgt). // distance to tgt in Lat metres only
 	Set LngDist to hf_geoDistance(LATLNG(tgt:Lat,gl_shipLatLng:Lng),tgt). // distance to tgt in Lng metres only
 	
-	SET ALTSpeed TO sv_PIDALT:UPDATE(TIME:SECONDS, gl_baseALTRADAR()). //Get the PID on the AlT diff as desired vertical velocity
+	SET ALTSpeed TO sv_PIDALT:UPDATE(TIME:SECONDS, ALT:RADAR). //Get the PID on the AlT diff as desired vertical velocity
 	Set LATSpeed to sv_PIDLAT:Update(TIME:SECONDS, gl_shipLatLng:Lat).//Get the PID on the Lat diff as desired lat in m/s
 	Set LONGSpeed to sv_PIDLONG:UPDATE(TIME:SECONDS, gl_shipLatLng:Lng). //Get the PID on the Long diff as desired long in m/s
 	
@@ -554,13 +601,13 @@ Parameter lastdt, lastPos.
 	Print "Throttle Setting: "+ ThrottSetting.
 	Print "Current Alt" + ship:Altitude.
 	Print "Ground Alt" + gl_surfaceElevation().
-	Print "Ground Dist" + gl_baseALTRADAR().
+	Print "Ground Dist" + ALT:RADAR.
 	Print "tgt Bearing :" + tgt:bearing.
 	Print "Calc tgt Bearing:" + hf_geoDir(gl_shipLatLng, tgt).
 	Print "Calc True tgt Bearing: " + hf_gs_bearing(gl_shipLatLng(),tgt).
 	Print "tgt Heading :" + tgt:heading.
 	Print "===============================".
-	Print "Base fall time: " + sqrt((2*gl_baseALTRADAR())/(gl_GRAV["G"])).
+	Print "Base fall time: " + sqrt((2*ALT:RADAR)/(gl_GRAV["G"])).
 	Print "Fall time: " + Flight_Arr["fallTime"].	
 	Print "Fall vel: " + Flight_Arr["fallVel"].
 	Print "===============================".

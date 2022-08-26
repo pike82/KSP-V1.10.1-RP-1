@@ -19,13 +19,13 @@ set label:STYLE:HSTRETCH TO True. // Fill horizontally
 
 local box_inc is wndw:addhlayout().
 	local inc_label is box_inc:addlabel("Heading").
-	local incvalue is box_inc:ADDTEXTFIELD("90").
+	local incvalue is box_inc:ADDTEXTFIELD("93"). //93 at 4:00 prior seems to give best alignment.
 	set incvalue:style:width to 100.
 	set incvalue:style:height to 18.
 
 local box_pitch is wndw:addhlayout().
 	local pitch_label is box_pitch:addlabel("Start Pitch").
-	local pitchvalue is box_pitch:ADDTEXTFIELD("87.5"). //Mk3 with LEM mass simulator J-2-230k: 87.5, Mk3 with J-2-230k:87.25
+	local pitchvalue is box_pitch:ADDTEXTFIELD("87.75"). //Mk3 with LEM mass simulator J-2-230k: 87.5, Mk3 with J-2-230k:87.75
 	set pitchvalue:style:width to 100.
 	set pitchvalue:style:height to 18.
 
@@ -130,6 +130,7 @@ PRINT ("Initialising libraries").
 
 FOR file IN LIST(
 	"Launch_atm"+ gv_ext,
+	"OrbMnvNode" + gv_ext,
 	"Util_Vessel"+ gv_ext,
 	"Util_Engine"+ gv_ext)
 	{ 
@@ -273,6 +274,12 @@ If runmode = 1{
 }
 
 If runmode = 1.1{
+	LIST ENGINES IN engList. //Get List of Engines in the vessel
+	FOR eng IN engList { 
+		IF eng:TAG ="J-2F" { 
+			eng:activate.
+		}
+	}
 	ff_partslist("J-2F"). //stand partslist create for engines using node burns
 	Local englist is List().
 	Local Starttime is time:seconds + nextnode:eta - ff_burn_time(nextnode:burnvector:mag/2).
@@ -283,11 +290,18 @@ If runmode = 1.1{
 		wait 1.
 	}
 	lock steering to nextnode:burnvector.
+	set SteeringManager:MAXSTOPPINGTIME to 10.
 	Print "Mnv set up".
 	RCS on.
 	until time:seconds > (startTime -20){
 		wait 1.
 	}
+	FOR eng IN engList { 
+		IF eng:TAG ="J-2F" { 
+			eng:shutdown.
+		}
+	}
+	LIST ENGINES IN engList. //Get List of Engines in the vessel
 	Print "Ullage Start".
 	FOR eng IN engList { 
 		IF eng:TAG ="APS" { 
@@ -296,7 +310,6 @@ If runmode = 1.1{
 	}
 	SET SHIP:CONTROL:FORE to 1.0.
 	wait until time:seconds >= (starttime).
-	SET SHIP:CONTROL:FORE to 0.
 	lock Throttle to 1.
 	Print "Engine Start".
 	FOR eng IN engList { 
@@ -304,13 +317,13 @@ If runmode = 1.1{
 			eng:shutdown.
 		}
 	}
-	LIST ENGINES IN engList. //Get List of Engines in the vessel
 	FOR eng IN engList { 
 		IF eng:TAG ="J-2F" { 
 			eng:activate.
 		}
 	}
 	wait 0.1.
+	SET SHIP:CONTROL:FORE to 0.
 	Print "EMR setup".
 	FOR eng IN engList { 
 		IF eng:TAG ="J-2F" { 
@@ -320,7 +333,7 @@ If runmode = 1.1{
 		}
 	}
 
-	///move MRS at 116 seconds in
+	//move MRS at 116 seconds in
 	until time:seconds > (startTime +116){
 		wait 1.
 	}
@@ -345,6 +358,7 @@ If runmode = 1.1{
 		}
 	}
 	Print "Burn complete".
+	SteeringManager:RESETTODEFAULT().
 	wait 30.
 	Shutdown.
 }
@@ -354,7 +368,7 @@ Print "Stage Finshed".
 Shutdown. //ends the script
 
 function first {
-	UNTIL time:seconds > (pegbasetime + 30){ //163 engines start, this occors at 193
+	UNTIL time:seconds > (pegbasetime + 30){ //163 engines start, this occors at 193 or 30 in reality
 		wait 0.1.
 	}
 	Stage.
@@ -362,7 +376,7 @@ function first {
 	Print ship:mass.
 	Print ship:drymass.
 	//LET release
-	UNTIL time:seconds > (pegbasetime + 35){ //198
+	UNTIL time:seconds > (pegbasetime + 35){ //198 or 35 in reality
 		wait 0.1.
 	}
 	Stage.
@@ -409,7 +423,7 @@ function second {
 			IF eng:TAG ="J-2F" { 
 				Local M is eng:GETMODULE("EMRController").
 				Print M:GETFIELD("current EMR").
-				M:SETFIELD("current EMR",4.93).
+				M:SETFIELD("current EMR",4.93).//4.93
 				M:DOEvent("Show EMR Controller").
 			}
 		}
@@ -423,7 +437,7 @@ function second {
 
 function third{
 	//Centre engine cutout
-	if (time:seconds > (pegbasetime + 300)) and (PEG_I = 0){ //460
+	if (time:seconds > (pegbasetime + 300)) and (PEG_I = 0){ //460 or 300 in reality
 		Local englist is List().
 		LIST ENGINES IN engList.
 		FOR eng IN engList { 
@@ -437,12 +451,14 @@ function third{
 	}
 
 	//High(5.5) to low MRS(4.34) command 
-	if (time:seconds > (pegbasetime + 338)) and (PEG_I = 2){ //498
+	if (time:seconds > (pegbasetime + 338)) and (PEG_I = 2){ //498 or 338 in reality
 		LIST ENGINES IN engList.
 		FOR eng IN engList { 
 			IF eng:TAG ="J-2" { 
 				Local M is eng:GETMODULE("EMRController").
-				M:DOAction("change EMR mode", true).
+				M:SETFIELD("current EMR", 4.34).//4.34
+				M:DOEvent("Show EMR Controller").
+				//M:DOAction("change EMR mode", true).
 			}
 		}
 		ff_PrintLine("Mixture Ratio Shift",1).

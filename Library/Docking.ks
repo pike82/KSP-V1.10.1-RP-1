@@ -150,18 +150,18 @@
 //Credits: Own with ideas from http://youtube.com/gisikw
 
 	FUNCTION hf_dok_sideswipe {
-	PARAMETER targetPort, dockingPort, Safe_distance, distance, speed, Step_Time.
+	PARAMETER targetPort, dockPort, Safe_distance, distance, speed, Step_Time.
 	 
-	  dockingPort:CONTROLFROM().
+	  dockPort:CONTROLFROM().
 	  Print "Setting up Reference Frame".
 	  Wait 0.1.
 	  // Set up reference directions
 	  LOCK Tar_Face TO targetPort:SHIP:FACING:VECTOR.
 	  LOCK Tar_Up TO targetPort:SHIP:FACING:TOPVECTOR.
 	  LOCK Tar_Star TO targetPort:SHIP:FACING:STARVECTOR.
-	  LOCK dok_Face TO dockingPort:SHIP:FACING:VECTOR.  
-	  LOCK dok_Up TO dockingPort:SHIP:FACING:TOPVECTOR.  
-	  LOCK dok_Star TO dockingPort:SHIP:FACING:STARVECTOR. 
+	  LOCK dok_Face TO dockPort:SHIP:FACING:VECTOR.  
+	  LOCK dok_Up TO dockPort:SHIP:FACING:TOPVECTOR.  
+	  LOCK dok_Star TO dockPort:SHIP:FACING:STARVECTOR. 
 	  LOCK relativeVelocity TO SHIP:VELOCITY:ORBIT - targetPort:SHIP:VELOCITY:ORBIT. //Bos are in SOI Raw Vector // + SHIP:BODY:POSITION is used to bring SOI Raw vector to Ship RAW vector
 
 	  
@@ -177,7 +177,7 @@
 	  Set Down_node to Tar_Up*-Safe_distance*1.45.
 	  
 		//Create vectors to reference nodes
-	  Lock Centre_node_vec to targetPort:NODEPOSITION - dockingPort:NODEPOSITION.
+	  Lock Centre_node_vec to targetPort:NODEPOSITION - dockPort:NODEPOSITION.
 	  Lock Fwd_node_vec to Fwd_node + Centre_node_vec.
 	  Lock Back_node_vec to Back_node + Centre_node_vec.
 	  Lock Stbd_node_vec to Stbd_node + Centre_node_vec.
@@ -334,12 +334,12 @@
 ///////////////////////////////////////////////////////////////////////////////////
 //Credits: http://youtube.com/gisikw	
 	FUNCTION hf_dok_approach_port {
-	PARAMETER targetPort, dockingPort, distance, speed.
+	PARAMETER targetPort, dockPort, distance, speed.
 
-		dockingPort:CONTROLFROM().
+		dockPort:CONTROLFROM().
 
 		LOCK distanceOffset TO targetPort:PORTFACING:VECTOR * distance.
-		LOCK approachVector TO targetPort:NODEPOSITION - dockingPort:NODEPOSITION + distanceOffset.
+		LOCK approachVector TO targetPort:NODEPOSITION - dockPort:NODEPOSITION + distanceOffset.
 		LOCK relativeVelocity TO SHIP:VELOCITY:ORBIT - targetPort:SHIP:VELOCITY:ORBIT.
 		LOCK STEERING TO LOOKDIRUP(-targetPort:PORTFACING:VECTOR, targetPort:PORTFACING:UPVECTOR).
 
@@ -347,13 +347,13 @@
 
 		UNTIL PM:HASEVENT("undock"){//dockingPort:STATE <> "Ready" {
 			hf_dok_translate((approachVector:normalized * speed) - relativeVelocity).
-			LOCAL distanceVector IS (targetPort:NODEPOSITION - dockingPort:NODEPOSITION).
+			LOCAL distanceVector IS (targetPort:NODEPOSITION - dockPort:NODEPOSITION).
 			Print "Node Distance: " + distance AT (0,10).
 			Print "Distance: " + distanceVector:MAG AT (0,11).
 			Print "Node Speed: " + speed AT (0,12).
 			Print "Speed: " + relativeVelocity:mag AT (0,13).
 
-			IF VANG(dockingPort:PORTFACING:VECTOR, distanceVector) < 2 AND abs(distance - distanceVector:MAG) < 0.3 {
+			IF VANG(dockPort:PORTFACING:VECTOR, distanceVector) < 2 AND abs(distance - distanceVector:MAG) < 0.3 {
 				BREAK.
 			}
 			WAIT 0.01.

@@ -63,6 +63,7 @@ FOR file IN LIST(
 	}
 
 Global boosterCPU is "Hawk".
+Global boosterCPU1 is "SaturnIB".
 ff_partslist(). //standard partslist create
 
 Print "Waiting for activation".
@@ -74,7 +75,7 @@ until holdload = true {
 	local PROCESSOR_List is list().
 	LIST PROCESSORS IN PROCESSOR_List. // get a list of all connected cores
 	for Processor in PROCESSOR_List {
-		if Processor:TAG = boosterCPU{ //checks to see if previous stage is present
+		if (Processor:TAG = boosterCPU) or (Processor:TAG = boosterCPU1){ //checks to see if previous stage is present
 			Set holdload to false.
 		}
 	}
@@ -119,7 +120,7 @@ if runMode = 3.1 {
 	ff_avionics_on().
 	ff_Node_exec(Starttime, 2).
 	ff_avionics_off().
-	set runMode to 4.1.
+	//set runMode to 4.1.
 }
 if runMode = 4.1 { 
 	Print "Run mode is:" + runMode.

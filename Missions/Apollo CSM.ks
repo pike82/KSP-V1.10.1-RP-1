@@ -99,16 +99,21 @@ if runMode = 1.1 {
 if runmode = 2.1{
 	Print "Run mode is:" + runMode.
 	//docking
-	set targetVessel TO VESSEL("ApolloMk3").
-	set shipPort to Ship:PARTSDUBBEDPATTERN("CSMDock").
-	print shipPort.
-	set shipPort to ShipPort[0].
-	set TarDock to targetvessel:PARTSDUBBEDPATTERN("LEM").
-	Print TarDock.
-	set TarDock to TarDock[0].
+	// set shipPort to Ship:PARTSDUBBEDPATTERN("CSMDock").
+	// print shipPort.//DEBUG
+	// set shipPort to ShipPort[0].
+	// Print shipPort:modules.//DEBUG
+	// set targetVessel TO VESSEL("ApolloMk3 Lander").
+	// set TarDock to targetvessel:PARTSDUBBEDPATTERN("LEMDock").
+	// Print TarDock.//DEBUG
+	// set TarDock to TarDock[0].
+	// Print TarDock:modules.//DEBUG
 
-	ff_dok_dock(shipPort, TarDock, targetVessel, 20, 0.25).
-    Shutdown. //ends the script
+	// wait 5.//debug
+
+	// ff_dok_dock(shipPort, TarDock, targetVessel, 10, 0.25).
+	// wait 1.
+    // Shutdown. //ends the script
 }
 if runmode = 3.1{
 	Print "Run mode is:" + runMode.
@@ -119,15 +124,16 @@ if runmode = 3.1{
 	Until Starttime < (time:seconds + 60){
 		wait 1.
 	}
-	ff_Node_exec(Starttime, 2).
+	ff_Node_exec(Starttime, 2, 5).
 	lock throttle to 0.
+	wait 1.
 	Shutdown.
 }
 
-///Final and abort runmode
+///Final and abort runmode. Return apoapsis should be 55km, 5km lower causes high G, 5km higher casuses to skip out without neutral lift (try to maintain AP at 60km).
 if runMode = 10.1 { 
 	Print "Run mode is:" + runMode.
-	until alt:radar < 15000{ // Activate drogue and remove heatsheild cover
+	until alt:radar < 20000{ // Activate drogue and remove heatsheild cover
 		Wait 0.5.
 	}
 	AG2 on.//Drogue chute deploy and remove top heat sheild

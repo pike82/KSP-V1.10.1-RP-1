@@ -262,15 +262,22 @@ parameter dV, press is 0. // For RSS/RO engine values must be given unless they 
 
 ///////////////////////////////////////////////////////////////////////////////////	
 function ff_Vel_Exhaust {
+parameter press is 0.
 	local g is 9.80665.  // Gravitational acceleration constant used in game for Isp Calculation (m/s²)
 	local engine_count is 0.
 	local thrust is 0.
 	local isp is 0. // Engine ISP (s)
 	list engines in all_engines.
-	for en in all_engines if en:ignition and not en:flameout {
-	  set thrust to thrust + en:availablethrust.
-	  set isp to isp + en:isp.
-	  set engine_count to engine_count + 1.
+	list engines in all_engines.
+	for en in all_engines {
+		if en:ignition and not en:flameout {
+			set thrust to thrust + en:possiblethrust.
+			set isp to isp + en:ISPAT(press).
+			set engine_count to engine_count + 1.
+		}
+	}
+	if engine_count = 0{
+		return 1. //return something to prevent error if above calcuation is used.
 	}
 	set isp to isp / engine_count.
 	return g *isp.///thrust). //
@@ -278,15 +285,21 @@ function ff_Vel_Exhaust {
 
 ///////////////////////////////////////////////////////////////////////////////////	
 function ff_mdot {
+parameter press is 0.
 	local g is 9.80665.  // Gravitational acceleration constant used in game for Isp Calculation (m/s²)
 	local engine_count is 0.
 	local thrust is 0.
 	local isp is 0. // Engine ISP (s)
 	list engines in all_engines.
-	for en in all_engines if en:ignition and not en:flameout {
-	  set thrust to thrust + en:availablethrust.
-	  set isp to isp + en:isp.
-	  set engine_count to engine_count + 1.
+	for en in all_engines {
+		if en:ignition and not en:flameout {
+			set thrust to thrust + en:possiblethrust.
+			set isp to isp + en:ISPAT(press).
+			set engine_count to engine_count + 1.
+		}
+	}
+	if engine_count = 0{
+		return 1. //return something to prevent error if above calcuation is used.
 	}
 	set isp to isp / engine_count.
 	set thrust to thrust* 1000.// Engine Thrust (kg * m/s²)

@@ -23,19 +23,19 @@ local box_inc is wndw:addhlayout().
 
 local box_pitch is wndw:addhlayout().
 	local pitch_label is box_pitch:addlabel("Start Pitch").
-	local pitchvalue is box_pitch:ADDTEXTFIELD("87.5").// 88.75 for Mk0, 87.5 for Mk1
+	local pitchvalue is box_pitch:ADDTEXTFIELD("88.0").// 88.75 for Mk0, 87.5 for Mk1, 88.0 for SaturnIV Explorer
 	set pitchvalue:style:width to 100.
 	set pitchvalue:style:height to 18.
 
 local box_APalt is wndw:addhlayout().
 	local APalt_label is box_APalt:addlabel("End AP(km)").
-	local APaltvalue is box_APalt:ADDTEXTFIELD("161.1").
+	local APaltvalue is box_APalt:ADDTEXTFIELD("190").//161.1 base, 190 for SaturnIV Explorer
 	set APaltvalue:style:width to 100.
 	set APaltvalue:style:height to 18.
 
 local box_PEalt is wndw:addhlayout().
 	local PEalt_label is box_PEalt:addlabel("End PE(km)").
-	local PEaltvalue is box_PEalt:ADDTEXTFIELD("161.1").
+	local PEaltvalue is box_PEalt:ADDTEXTFIELD("190").//161.1 base, 190 for SaturnIV Explorer
 	set PEaltvalue:style:width to 100.
 	set PEaltvalue:style:height to 18.
 
@@ -294,7 +294,7 @@ function third{
 		FOR eng IN engList { 
 			IF eng:TAG ="J-2F" { 
 				Local M is eng:GETMODULE("EMRController").
-				M:DOAction("change EMR mode", true).
+				//M:DOAction("change EMR mode", true).
 			}
 		}
 		ff_PrintLine("Mixture Ratio Shift",1).
